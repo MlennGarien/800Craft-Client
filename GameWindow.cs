@@ -673,6 +673,7 @@ namespace ManicDigger
                 GL.Enable(EnableCap.CullFace);
             }
             Keyboard.KeyRepeat = true;
+            KeyPress += new EventHandler<OpenTK.KeyPressEventArgs>(ManicDiggerGameWindow_KeyPress);
             Keyboard.KeyDown += new EventHandler<OpenTK.Input.KeyboardKeyEventArgs>(Keyboard_KeyDown);
             Keyboard.KeyUp += new EventHandler<OpenTK.Input.KeyboardKeyEventArgs>(Keyboard_KeyUp);
             materialSlots = data.DefaultMaterialSlots;
@@ -682,6 +683,17 @@ namespace ManicDigger
             GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
             GL.ShadeModel(ShadingModel.Smooth);
             System.Windows.Forms.Cursor.Hide();
+        }
+
+        void ManicDiggerGameWindow_KeyPress(object sender, OpenTK.KeyPressEventArgs e)
+        {
+            if (GuiTyping == TypingState.Typing)
+            {
+                char c = e.KeyChar; if (char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || char.IsPunctuation(c) || char.IsSeparator(c) || char.IsSymbol(c))
+                {
+                    GuiTypingBuffer += e.KeyChar;
+                }
+            }
         }
         float overheadcameradistance = 10;
         float tppcameradistance = 3;
@@ -2872,23 +2884,30 @@ namespace ManicDigger
         private void DrawMapLoading()
         {
             string connecting = "Connecting...";
-            string progress = string.Format("{0}%\n", maploadingprogress.ProgressPercent);
-            string progress1 = string.Format("{0} KB", (maploadingprogress.ProgressBytes / 1024));
-            Draw2dText(network.ServerName, xcenter(TextSize(network.ServerName, 14).Width), Height / 2 - 150, 14, Color.White);
-            Draw2dText(network.ServerMotd, xcenter(TextSize(network.ServerMotd, 14).Width), Height / 2 - 100, 14, Color.White);
-            Draw2dText(connecting, xcenter(TextSize(connecting, 14).Width), Height / 2 - 50, 14, Color.White);
-            if (maploadingprogress.ProgressPercent > 0)
+            try
             {
-                Draw2dText(progress, xcenter(TextSize(progress, 14).Width), Height / 2 - 20, 14, Color.White);
-                Draw2dText(progress1, xcenter(TextSize(progress1, 14).Width), Height / 2 + 10, 14, Color.White);
-                //float progressratio = (float)maploadingprogress.ProgressBytes
-                //    / ((float)maploadingprogress.ProgressBytes / ((float)maploadingprogress.ProgressPercent / 100));
-                float progressratio = (float)maploadingprogress.ProgressPercent / 100;
-                int sizex = 400;
-                int sizey = 40;
-                Draw2dTexture(WhiteTexture(), xcenter(sizex), Height / 2 + 70, sizex, sizey, null, Color.Black);
-                Color c = InterpolateColor(progressratio, Color.Red, Color.Yellow, Color.Green);
-                Draw2dTexture(WhiteTexture(), xcenter(sizex), Height / 2 + 70, progressratio * sizex, sizey, null, c);
+                string progress = string.Format("{0}%\n", maploadingprogress.ProgressPercent);
+                string progress1 = string.Format("{0} KB", (maploadingprogress.ProgressBytes / 1024));
+                Draw2dText(network.ServerName, xcenter(TextSize(network.ServerName, 14).Width), Height / 2 - 150, 14, Color.White);
+                Draw2dText(network.ServerMotd, xcenter(TextSize(network.ServerMotd, 14).Width), Height / 2 - 100, 14, Color.White);
+                Draw2dText(connecting, xcenter(TextSize(connecting, 14).Width), Height / 2 - 50, 14, Color.White);
+                if (maploadingprogress.ProgressPercent > 0)
+                {
+                    Draw2dText(progress, xcenter(TextSize(progress, 14).Width), Height / 2 - 20, 14, Color.White);
+                    Draw2dText(progress1, xcenter(TextSize(progress1, 14).Width), Height / 2 + 10, 14, Color.White);
+                    //float progressratio = (float)maploadingprogress.ProgressBytes
+                    //    / ((float)maploadingprogress.ProgressBytes / ((float)maploadingprogress.ProgressPercent / 100));
+                    float progressratio = (float)maploadingprogress.ProgressPercent / 100;
+                    int sizex = 400;
+                    int sizey = 40;
+                    Draw2dTexture(WhiteTexture(), xcenter(sizex), Height / 2 + 70, sizex, sizey, null, Color.Black);
+                    Color c = InterpolateColor(progressratio, Color.Red, Color.Yellow, Color.Green);
+                    Draw2dTexture(WhiteTexture(), xcenter(sizex), Height / 2 + 70, progressratio * sizex, sizey, null, c);
+                }
+            }
+            catch (Exception e)
+            {
+                Draw2dText(e.Message, xcenter(TextSize(e.Message, 14).Width), Height / 2 - 50, 14, Color.White);
             }
         }
         int inventoryselectedx;
