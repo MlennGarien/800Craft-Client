@@ -1,0 +1,13 @@
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\GameModeFortress.exe.config
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\GameModeFortress.exe
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\GameModeFortress.pdb
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\GameModeMine.exe
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\ManicDigger.dll
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\OpenTK.dll
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\protobuf-net.dll
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\GameModeMine.pdb
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\ManicDigger.pdb
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\bin\Release\protobuf-net.xml
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\obj\Release\GameModeFortress.csprojResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\obj\Release\GameModeFortress.exe
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeFortress\obj\Release\GameModeFortress.pdb

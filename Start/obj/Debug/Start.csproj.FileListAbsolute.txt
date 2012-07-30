@@ -1,0 +1,11 @@
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\obj\Debug\ManicDigger.ServerSelector.resources
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\obj\Debug\Start.csproj.GenerateResource.Cache
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\bin\Debug\Start.exe.config
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\bin\Debug\Start.exe
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\bin\Debug\Start.pdb
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\bin\Debug\ManicDigger.dll
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\bin\Debug\OpenTK.dll
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\bin\Debug\ManicDigger.pdb
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\obj\Debug\Start.csprojResolveAssemblyReference.cache
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\obj\Debug\Start.exe
+C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\Start\obj\Debug\Start.pdb
