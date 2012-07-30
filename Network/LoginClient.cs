@@ -80,7 +80,7 @@ namespace ManicDigger
         {
             string serveraddress = "74.109.22.242"; //au70
             string port = "25565";
-            string mppass = "REMOVED"; //old code below
+            string mppass = "REMOVED"; //old code bw
             /* string html = LoginAndReadPage(username, password, gameurl);
             string serveraddress = ReadValue(html.Substring(html.IndexOf("\"server\""), 40));
             string port = ReadValue(html.Substring(html.IndexOf("\"port\""), 40));

@@ -1438,7 +1438,8 @@ namespace ManicDigger
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine(e.ToString());
+                        Draw2dText(e.Message, 0, 0, 24, Color.Red);
+                        return;
                     }
                     if (logindata == null)
                     {

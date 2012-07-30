@@ -7,3 +7,10 @@ C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\bin\Debu
 C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\obj\Debug\ManicDigger.csprojResolveAssemblyReference.cache
 C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\obj\Debug\ManicDigger.dll
 C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\obj\Debug\ManicDigger.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Debug\ManicDigger.dll.config
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Debug\ManicDigger.dll
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Debug\ManicDigger.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Debug\ManicDigger.ConsoleForm.resources
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Debug\ManicDigger.csproj.GenerateResource.Cache
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Debug\ManicDigger.dll
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Debug\ManicDigger.pdb
