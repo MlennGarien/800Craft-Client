@@ -11,8 +11,8 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\GameModeMine.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\GameModeMine.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\ManicDigger.dll
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\OpenTK.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\ManicDigger.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.csprojResolveAssemblyReference.cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.pdb
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\OpenTK.dll

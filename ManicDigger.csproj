@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ManicDigger</RootNamespace>
     <AssemblyName>ManicDigger</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StartupObject>
     </StartupObject>
@@ -36,6 +36,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -96,6 +97,7 @@
     <Compile Include="Renderers\TerrainChunkRenderer.cs" />
     <Compile Include="Renderers\TerrainRenderer.cs" />
     <Compile Include="Renderers\TextRenderer.cs" />
+    <Compile Include="Renderers\TextureAtlasConverter.cs" />
     <Compile Include="Ticks.cs" />
     <Compile Include="MapTools\WaterSimple.cs" />
     <Compile Include="Renderers\WeaponRenderer.cs" />

@@ -10,8 +10,8 @@ C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\obj\Rele
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\ManicDigger.dll.config
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\ManicDigger.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\ManicDigger.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\OpenTK.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.ConsoleForm.resources
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.csproj.GenerateResource.Cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.pdb
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\OpenTK.dll

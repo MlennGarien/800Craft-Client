@@ -62,21 +62,20 @@ namespace ManicDigger
         DateTime lastpositionsent;
         public void SendSetBlock(Vector3 position, BlockSetMode mode, int type)
         {
-            MemoryStream ms = new MemoryStream();
-            BinaryWriter bw = new BinaryWriter(ms);
-            bw.Write((byte)MinecraftClientPacketId.SetBlock);
-                NetworkHelper.WriteInt16(bw, (short)(position.X));//-4
-                NetworkHelper.WriteInt16(bw, (short)(position.Z));
-                NetworkHelper.WriteInt16(bw, (short)position.Y);
-            
-            bw.Write((byte)(mode == BlockSetMode.Create ? 1 : 0));
-            bw.Write((byte)type);
-            SendPacket(ms.ToArray());
-            //tosend.Add(ms.ToArray());
-            //Console.WriteLine(this.position.LocalPlayerPosition);
-            //Console.WriteLine("p" + position);
-            //Console.WriteLine("player:" + lastsentposition + ", build:" + position
-            //    + ", block:" + type + ", mode:" + Enum.GetName(typeof(BlockSetMode), mode));
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (BinaryWriter bw = new BinaryWriter(ms))
+                {
+                    bw.Write((byte)MinecraftClientPacketId.SetBlock);
+                    NetworkHelper.WriteInt16(bw, (short)(position.X));//-4
+                    NetworkHelper.WriteInt16(bw, (short)(position.Z));
+                    NetworkHelper.WriteInt16(bw, (short)position.Y);
+
+                    bw.Write((byte)(mode == BlockSetMode.Create ? 1 : 0));
+                    bw.Write((byte)type);
+                    SendPacket(ms.ToArray());
+                }
+            }
         }
         public void SendChat(string s)
         {
@@ -302,7 +301,8 @@ namespace ManicDigger
                         y = NetworkHelper.ReadInt16(br);
 
                         byte type = br.ReadByte();
-                        try { Map.SetTileAndUpdate(new Vector3(x, y, z), type); }
+                        try { 
+                            Map.SetTileAndUpdate(new Vector3(x, y, z), type); }
                         catch { Console.WriteLine("Cannot update tile!"); }
                     }
                     break;

@@ -26,6 +26,8 @@ namespace ManicDigger
         int terrainTexture { get; }
         int DrawDistance { get; set; }
         int ChunkUpdates { get; }
+        int[] terrainTextures1d { get; }
+        int terrainTexturesPerAtlas { get; }
     }
     public class TerrainDrawerDummy : ITerrainRenderer
     {
@@ -53,17 +55,33 @@ namespace ManicDigger
         #region ITerrainDrawer Members
         public int ChunkUpdates { get; set; }
         #endregion
+        #region ITerrainRenderer Members
+        public int[] terrainTextures1d { get; set; }
+        public int terrainTexturesPerAtlas { get; set; }
+        #endregion
     }
     public class TextureAtlas
     {
-        public static RectangleF TextureCoords(int textureId, int texturesPacked)
+        public static RectangleF TextureCoords2d(int textureId, int texturesPacked)
         {
-            float bufferRatio = 0.0f;//0.1
             RectangleF r = new RectangleF();
-            r.Y = (1.0f / texturesPacked * (int)(textureId / texturesPacked)) + ((bufferRatio) * (1.0f / texturesPacked));
-            r.X = (1.0f / texturesPacked * (textureId % texturesPacked)) + ((bufferRatio) * (1.0f / texturesPacked));
-            r.Width = (1f - 2f * bufferRatio) * 1.0f / texturesPacked;
-            r.Height = (1f - 2f * bufferRatio) * 1.0f / texturesPacked;
+            r.Y = (1.0f / texturesPacked * (int)(textureId / texturesPacked));
+            r.X = (1.0f / texturesPacked * (textureId % texturesPacked));
+            r.Width = 1.0f / texturesPacked;
+            r.Height = 1.0f / texturesPacked;
+            return r;
+        }
+        public static RectangleF TextureCoords1d(int textureId, int texturesPerAtlas)
+        {
+            return TextureCoords1d(textureId, texturesPerAtlas, 1);
+        }
+        public static RectangleF TextureCoords1d(int textureId, int texturesPerAtlas, int tilecount)
+        {
+            RectangleF r = new RectangleF();
+            r.Y = (1.0f / texturesPerAtlas * (int)(textureId % texturesPerAtlas));
+            r.X = 0;
+            r.Width = 1.0f * tilecount;
+            r.Height = 1.0f / texturesPerAtlas;
             return r;
         }
     }
@@ -214,7 +232,7 @@ namespace ManicDigger
         [Inject]
         public TerrainChunkRenderer terrainchunkdrawer { get; set; }
         public event EventHandler<ExceptionEventArgs> OnCrash;
-        
+
         public int chunksize = 16;
         public bool DONOTDRAWEDGES = true;
         public int texturesPacked { get { return 16; } } //16x16
@@ -248,9 +266,25 @@ namespace ManicDigger
             started = true;
             GL.Enable(EnableCap.Texture2D);
             terrainTexture = the3d.LoadTexture(getfile.GetFile("terrain.png"));
+            List<int> terrainTextures1d = new List<int>();
+            using (var atlas2d = new Bitmap(getfile.GetFile("terrain.png")))
+            {
+                terrainTexturesPerAtlas = atlas1dheight / (atlas2d.Width / atlas2dtiles);
+                List<Bitmap> atlases1d = new TextureAtlasConverter().Atlas2dInto1d(atlas2d, atlas2dtiles, atlas1dheight);
+                foreach (Bitmap bmp in atlases1d)
+                {
+                    terrainTextures1d.Add(the3d.LoadTexture(bmp));
+                    bmp.Dispose();
+                }
+            }
+            this.terrainTextures1d = terrainTextures1d.ToArray();
             updateThreadRunning++;
             new Thread(UpdateThreadStart).Start();
         }
+        public int atlas1dheight = 2048;
+        public int atlas2dtiles = 16; // 16x16
+        public int[] terrainTextures1d { get; set; }
+        public int terrainTexturesPerAtlas { get; set; }
         bool exit2;
         void UpdateThreadStart()
         {
@@ -442,6 +476,11 @@ namespace ManicDigger
                 {
                     foreach (Vector3 p in nearchunksremove)
                     {
+                        if (!batchedblocks.ContainsKey(p))
+                        {
+                            //crash fix. crash happens on UpdateAllTiles().
+                            continue;
+                        }
                         int[] b = batchedblocks[p];
                         if (b != null)
                         {
@@ -459,7 +498,7 @@ namespace ManicDigger
                         List<int> ids = new List<int>();
                         foreach (var cc in chunk)
                         {
-                            ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent));
+                            ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
                         }
                         batchedblocks[p] = ids.ToArray();
                     }
@@ -494,7 +533,7 @@ namespace ManicDigger
                             {
                                 if (v.indices.Length != 0)
                                 {
-                                    ids.Add(batcher.Add(v.indices, v.vertices, v.transparent));
+                                    ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture));
                                 }
                             }
                             if (ids.Count > 0)
@@ -539,38 +578,58 @@ namespace ManicDigger
             }
             return processed;
         }
-        private bool IsChunksAroundReady(int chunkx, int chunky, int chunkz)
+        private bool IsChunksAroundReady(int chunkx, int chunky, int achunkz)
         {
-            int x = chunkx * chunksize;
-            int y = chunky * chunksize;
-            int z = chunkz * chunksize;
-            if (!(ischunkready.IsChunkReady(x, y, z)))
+            //Bad fix
+            //Was: Just making sure that 6 chunks around are loaded - for drawing edges of chunk.
+            //Is: Forced whole columns to be loaded, so that when using full shadows,
+            //light does not flood into not yet ready chunks which would cause 
+            //UpdateStartSunlight() to mark a whole column of chunks as fully-lighted.
+            for (int zz = 0; zz < mapstorage.MapSizeZ / chunksize; zz++)
+            //int zz = achunkz;
             {
-                return false;
-            }
-            if (IsValidChunkPosition(chunkx - 1, chunky, chunkz) && !ischunkready.IsChunkReady(x - chunksize, y, z))
-            {
-                return false;
-            }
-            if (IsValidChunkPosition(chunkx + 1, chunky, chunkz) && !ischunkready.IsChunkReady(x + chunksize, y, z))
-            {
-                return false;
-            }
-            if (IsValidChunkPosition(chunkx, chunky - 1, chunkz) && !ischunkready.IsChunkReady(x, y - chunksize, z))
-            {
-                return false;
-            }
-            if (IsValidChunkPosition(chunkx, chunky + 1, chunkz) && !ischunkready.IsChunkReady(x, y + chunksize, z))
-            {
-                return false;
-            }
-            if (IsValidChunkPosition(chunkx, chunky, chunkz - 1) && !ischunkready.IsChunkReady(x, y, z - chunksize))
-            {
-                return false;
-            }
-            if (IsValidChunkPosition(chunkx, chunky, chunkz + 1) && !ischunkready.IsChunkReady(x, y, z + chunksize))
-            {
-                return false;
+                int chunkz = zz;
+                int x = chunkx * chunksize;
+                int y = chunky * chunksize;
+                int z = chunkz * chunksize;
+                if (!(ischunkready.IsChunkReady(x, y, z)))
+                {
+                    return false;
+                }
+
+                if (IsValidChunkPosition(chunkx - 1, chunky, chunkz) && !ischunkready.IsChunkReady(x - chunksize, y, z))
+                {
+                    return false;
+                }
+                if (IsValidChunkPosition(chunkx + 1, chunky, chunkz) && !ischunkready.IsChunkReady(x + chunksize, y, z))
+                {
+                    return false;
+                }
+                if (IsValidChunkPosition(chunkx, chunky - 1, chunkz) && !ischunkready.IsChunkReady(x, y - chunksize, z))
+                {
+                    return false;
+                }
+                if (IsValidChunkPosition(chunkx, chunky + 1, chunkz) && !ischunkready.IsChunkReady(x, y + chunksize, z))
+                {
+                    return false;
+                }
+
+                if (IsValidChunkPosition(chunkx - 1, chunky - 1, chunkz) && !ischunkready.IsChunkReady(x - chunksize, y - chunksize, z))
+                {
+                    return false;
+                }
+                if (IsValidChunkPosition(chunkx - 1, chunky + 1, chunkz) && !ischunkready.IsChunkReady(x - chunksize, y + chunksize, z))
+                {
+                    return false;
+                }
+                if (IsValidChunkPosition(chunkx + 1, chunky - 1, chunkz) && !ischunkready.IsChunkReady(x + chunksize, y - chunksize, z))
+                {
+                    return false;
+                }
+                if (IsValidChunkPosition(chunkx + 1, chunky + 1, chunkz) && !ischunkready.IsChunkReady(x + chunksize, y + chunksize, z))
+                {
+                    return false;
+                }
             }
             return true;
         }
@@ -591,7 +650,7 @@ namespace ManicDigger
         {
             //GL.Color3(terraincolor);
             worldfeatures.DrawWorldFeatures();
-            lock (terrainlock)            
+            lock (terrainlock)
             {
                 GL.BindTexture(TextureTarget.Texture2D, terrainTexture);
                 //must be drawn last, for transparent blocks.
@@ -599,6 +658,7 @@ namespace ManicDigger
             }
         }
         Dictionary<Vector3, int[]> batchedblocks = new Dictionary<Vector3, int[]>();
+        Vector3 lastplayerposition;
         MeshBatcher batcher = new MeshBatcher();
         public void UpdateAllTiles()
         {
@@ -668,7 +728,7 @@ namespace ManicDigger
         public int TrianglesCount()
         {
             return batcher.TotalTriangleCount;
-        }     
+        }
         #endregion
         #region IDisposable Members
         public void Dispose()
@@ -731,7 +791,7 @@ namespace ManicDigger
             //top
             {
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Top);
-                RectangleF texrec = TextureAtlas.TextureCoords(sidetexture, terraindrawer.texturesPacked);
+                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
                 short lastelement = (short)myvertices.Count;
                 myvertices.Add(new VertexPositionTexture(top00.X, top00.Y, top00.Z, texrec.Left, texrec.Top, curcolor));
                 myvertices.Add(new VertexPositionTexture(top01.X, top01.Y, top01.Z, texrec.Left, texrec.Bottom, curcolor));
@@ -747,7 +807,7 @@ namespace ManicDigger
             //bottom - same as top, but z is 1 less.
             {
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Bottom);
-                RectangleF texrec = TextureAtlas.TextureCoords(sidetexture, terraindrawer.texturesPacked);
+                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
                 short lastelement = (short)myvertices.Count;
                 myvertices.Add(new VertexPositionTexture(bottom00.X, bottom00.Y, bottom00.Z, texrec.Left, texrec.Top, curcolor));
                 myvertices.Add(new VertexPositionTexture(bottom01.X, bottom01.Y, bottom01.Z, texrec.Left, texrec.Bottom, curcolor));
@@ -763,7 +823,7 @@ namespace ManicDigger
             //front
             {
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Front);
-                RectangleF texrec = TextureAtlas.TextureCoords(sidetexture, terraindrawer.texturesPacked);
+                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
                 short lastelement = (short)myvertices.Count;
                 myvertices.Add(new VertexPositionTexture(bottom00.X, bottom00.Y, bottom00.Z, texrec.Left, texrec.Bottom, curcolor));
                 myvertices.Add(new VertexPositionTexture(bottom01.X, bottom01.Y, bottom01.Z, texrec.Right, texrec.Bottom, curcolor));
@@ -779,7 +839,7 @@ namespace ManicDigger
             //back - same as front, but x is 1 greater.
             {
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Back);
-                RectangleF texrec = TextureAtlas.TextureCoords(sidetexture, terraindrawer.texturesPacked);
+                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
                 short lastelement = (short)myvertices.Count;
                 myvertices.Add(new VertexPositionTexture(bottom10.X, bottom10.Y, bottom10.Z, texrec.Right, texrec.Bottom, curcolor));
                 myvertices.Add(new VertexPositionTexture(bottom11.X, bottom11.Y, bottom11.Z, texrec.Left, texrec.Bottom, curcolor));
@@ -794,7 +854,7 @@ namespace ManicDigger
             }
             {
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Left);
-                RectangleF texrec = TextureAtlas.TextureCoords(sidetexture, terraindrawer.texturesPacked);
+                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
                 short lastelement = (short)myvertices.Count;
                 myvertices.Add(new VertexPositionTexture(bottom00.X, bottom00.Y, bottom00.Z, texrec.Right, texrec.Bottom, curcolor));
                 myvertices.Add(new VertexPositionTexture(top00.X, top00.Y, top00.Z, texrec.Right, texrec.Top, curcolor));
@@ -810,7 +870,7 @@ namespace ManicDigger
             //right - same as left, but y is 1 greater.
             {
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Right);
-                RectangleF texrec = TextureAtlas.TextureCoords(sidetexture, terraindrawer.texturesPacked);
+                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
                 short lastelement = (short)myvertices.Count;
                 myvertices.Add(new VertexPositionTexture(bottom01.X, bottom01.Y, bottom01.Z, texrec.Left, texrec.Bottom, curcolor));
                 myvertices.Add(new VertexPositionTexture(top01.X, top01.Y, top01.Z, texrec.Left, texrec.Top, curcolor));

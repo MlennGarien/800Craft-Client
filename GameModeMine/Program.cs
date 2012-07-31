@@ -38,7 +38,7 @@ namespace ManicDigger
         private void MakeGame(bool singleplayer)
         {
             var gamedata = new GameDataTilesMinecraft();
-            
+
             INetworkClient network;
             if (singleplayer)
             {
@@ -49,6 +49,8 @@ namespace ManicDigger
                 network = new NetworkClientMinecraft();
             }
             clientgame = new GameMinecraft();
+            /* fix for crash */
+            //w.fpshistorygraphrenderer = new FpsHistoryGraphRenderer() { draw = w, viewportsize = w };
             var mapstorage = clientgame;
             var getfile = new GetFilePath(new[] { "mine", "minecraft" });
             var config3d = new Config3d();
@@ -99,6 +101,7 @@ namespace ManicDigger
             terrainChunkDrawer.data = gamedata;
             terrainChunkDrawer.mapstorage = clientgame;
             terrainDrawer.terrainchunkdrawer = terrainChunkDrawer;
+            terrainChunkDrawer.terrainrenderer = terrainDrawer;
             terrainChunkDrawer.blockdrawertorch = new BlockDrawerTorchDummy();
             worldfeatures.getfile = getfile;
             worldfeatures.localplayerposition = localplayerposition;
@@ -138,8 +141,14 @@ namespace ManicDigger
             mapgenerator.data = gamedata;
             audio.getfile = getfile;
             audio.gameexit = w;
-            shadowsfull = new Shadows() { data = gamedata, map = clientgame, terrain = terrainDrawer,
-                localplayerposition = localplayerposition, config3d = config3d };
+            shadowsfull = new Shadows()
+            {
+                data = gamedata,
+                map = clientgame,
+                terrain = terrainDrawer,
+                localplayerposition = localplayerposition,
+                config3d = config3d
+            };
             shadowssimple = new ShadowsSimple() { data = gamedata, map = clientgame };
             UseShadowsSimple();
             w.currentshadows = this;

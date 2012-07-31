@@ -28,8 +28,8 @@ namespace ManicDigger.Renderers
             {
                 foreach (Particle pp in p.particles)
                 {
-                    GL.Begin(BeginMode.Polygon);
-                    RectangleF texrec = TextureAtlas.TextureCoords(p.textureid, terrain.texturesPacked);
+                    GL.Begin(BeginMode.Triangles);
+                    RectangleF texrec = TextureAtlas.TextureCoords2d(p.textureid, terrain.texturesPacked);
                     GL.TexCoord2(texrec.Left, texrec.Top);
                     GL.Vertex3(pp.position);
                     GL.TexCoord2(texrec.Right, texrec.Top);
@@ -50,7 +50,7 @@ namespace ManicDigger.Renderers
         }
         float particlesize = 0.6f;
         float particlespeed = 5;
-        float particlegravity = 2.5f;
+        float particlegravity = 2f;
         int particlecount = 20;
         TimeSpan particletime = TimeSpan.FromSeconds(5);
         int maxparticleeffects = 50;

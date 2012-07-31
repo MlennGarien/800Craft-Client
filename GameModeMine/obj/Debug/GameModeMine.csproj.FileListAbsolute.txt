@@ -7,3 +7,12 @@ C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameMode
 C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeMine\obj\Debug\GameModeMine.csprojResolveAssemblyReference.cache
 C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeMine\obj\Debug\GameModeMine.exe
 C:\Users\Administrator\Desktop\andybrown87-digger-stole-my-bike-e828d9b\GameModeMine\obj\Debug\GameModeMine.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Debug\GameModeMine.exe.config
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Debug\GameModeMine.exe
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Debug\GameModeMine.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Debug\ManicDigger.dll
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Debug\OpenTK.dll
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Debug\ManicDigger.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Debug\GameModeMine.csprojResolveAssemblyReference.cache
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Debug\GameModeMine.exe
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Debug\GameModeMine.pdb

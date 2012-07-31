@@ -147,6 +147,17 @@ namespace ManicDigger
             }
             return true;
         }
+
+        public static IEnumerable<Vector3> BlocksAround(Vector3 pos)
+        {
+            yield return new Vector3(pos + new Vector3(0, 0, 0));
+            yield return new Vector3(pos + new Vector3(+1, 0, 0));
+            yield return new Vector3(pos + new Vector3(-1, 0, 0));
+            yield return new Vector3(pos + new Vector3(0, +1, 0));
+            yield return new Vector3(pos + new Vector3(0, -1, 0));
+            yield return new Vector3(pos + new Vector3(0, 0, +1));
+            yield return new Vector3(pos + new Vector3(0, 0, -1));
+        }
         public static int blockheight(IMapStorage map, int tileidempty, int x, int y)
         {
             for (int z = map.MapSizeZ - 1; z >= 0; z--)
@@ -300,6 +311,8 @@ namespace ManicDigger
             }
             LoadMap(map, File.ReadAllBytes(filename));
         }
+
+        
         public void LoadMap(IMapStorage map, byte[] data)
         {
             using (GZipStream s = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
@@ -496,7 +509,7 @@ namespace ManicDigger
             mapgenerator.GenerateMap(map);
         }
     }
-    
+
     public interface IGameData
     {
         int GetTileTextureId(int tileType, TileSide side);
@@ -527,6 +540,7 @@ namespace ManicDigger
         int TileIdTrampoline { get; }
         byte TileIdTorch { get; }
         int GetLightRadius(int blocktype);
+        bool IsTransparentTileFully(byte blocktype);
     }
     public class GameDataDummy : IGameData
     {
@@ -650,6 +664,12 @@ namespace ManicDigger
         public int GetLightRadius(int blocktype)
         {
             return 0;
+        }
+        #endregion
+        #region IGameData Members
+        public bool IsTransparentTileFully(byte blocktype)
+        {
+            return false;
         }
         #endregion
     }
