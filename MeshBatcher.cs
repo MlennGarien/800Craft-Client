@@ -20,7 +20,7 @@ namespace ManicDigger
             }
             this.lists.Add(lists);
         }
-        int listincrease = 1000;
+        public int listincrease = 1000;
         //public int nlists = 50000;
         private int GetList(int i)
         {
@@ -115,6 +115,7 @@ namespace ManicDigger
                     }
                     GL.DisableClientState(EnableCap.TextureCoordArray);
                     GL.DisableClientState(EnableCap.VertexArray);
+                    GL.DisableClientState(EnableCap.ColorArray);
 
                     /*
                     GL.Begin(BeginMode.Triangles);
@@ -136,16 +137,24 @@ namespace ManicDigger
                     addcounter = 0;
                 }
             }
+            if (tocall == null)
+            {
+                tocall = new int[MAX_DISPLAY_LISTS];
+            }
+            int tocallpos = 0;
             for (int i = 0; i < count; i++)
             {
                 if (!empty.ContainsKey(i))
                 {
                     if (!GetListInfo(i).transparent)
                     {
-                        GL.CallList(GetList(i));
+                        tocall[tocallpos] = GetList(i);
+                        tocallpos++;
                     }
                 }
             }
+            GL.CallLists(tocallpos, ListNameType.Int, tocall);
+            tocallpos = 0;
             GL.Disable(EnableCap.CullFace);//for water.
             for (int i = 0; i < count; i++)
             {
@@ -153,10 +162,12 @@ namespace ManicDigger
                 {
                     if (GetListInfo(i).transparent)
                     {
-                        GL.CallList(GetList(i));
+                        tocall[tocallpos] = GetList(i);
+                        tocallpos++;
                     }
                 }
             }
+            GL.CallLists(tocallpos, ListNameType.Int, tocall);
             GL.Enable(EnableCap.CullFace);
             //depth sorting. is it needed?
             /*
@@ -169,11 +180,8 @@ namespace ManicDigger
             GL.CallLists(count, ListNameType.Int, alldrawlists.ToArray());
             */
         }
-        /*
-        int f(int a, int b)
-        {
-        }
-        */
+        public int MAX_DISPLAY_LISTS = 32 * 1024;
+        int[] tocall;
         int strideofvertices = -1;
         int StrideOfVertices
         {

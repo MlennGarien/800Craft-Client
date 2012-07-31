@@ -572,7 +572,7 @@ namespace ManicDigger
 
         const float rotation_speed = 180.0f * 0.05f;
         //float angle;
-
+        bool IsMono = Type.GetType("Mono.Runtime") != null;
         public void DrawMap()
         {
             terrain.UpdateAllTiles();
@@ -1825,6 +1825,26 @@ namespace ManicDigger
             return map.GetBlock(x, y, z) == data.TileIdEmpty
                 || data.IsWaterTile(map.GetBlock(x, y, z));
         }
+
+        bool IsTileEmptyForPhysicsClose(int x, int y, int z)
+        {
+            if (z >= map.MapSizeZ)
+            {
+                return true;
+            }
+            if (x < 0 || y < 0 || z < 0)// || z >= mapsizez)
+            {
+                return ENABLE_FREEMOVE;
+            }
+            if (x >= map.MapSizeX || y >= map.MapSizeY)// || z >= mapsizez)
+            {
+                return ENABLE_FREEMOVE;
+            }
+            return map.GetBlock(x, y, z) == data.TileIdEmpty
+                || map.GetBlock(x, y, z) == data.TileIdSingleStairs
+                || data.IsWaterTile(map.GetBlock(x, y, z))
+                || data.IsEmptyForPhysics(map.GetBlock(x, y, z));
+        }
         float PICK_DISTANCE = 6.5f;
         public float PickDistance { get { return PICK_DISTANCE; } set { PICK_DISTANCE = value; } }
         Matrix4 m_theModelView;
@@ -1955,10 +1975,12 @@ namespace ManicDigger
                         (int)ToMapPos(player.playerposition).Y,
                         (int)ToMapPos(player.playerposition).Z);
             BlockPosSide pick0;
-            if (pick2.Count > 0 &&
-                ((pickdistanceok && playertileempty)
+            bool playertileemptyclose = IsTileEmptyForPhysicsClose(
+(int)ToMapPos(player.playerposition).X,
+(int)ToMapPos(player.playerposition).Y,
+(int)ToMapPos(player.playerposition).Z);
+            if (pick2.Count > 0 && ((pickdistanceok && (playertileempty || (playertileemptyclose)) ))
                 || overheadcamera)
-                )
             {
                 pickcubepos = pick2[0].Current();
                 pickcubepos = new Vector3((int)pickcubepos.X, (int)pickcubepos.Y, (int)pickcubepos.Z);
@@ -2125,13 +2147,10 @@ namespace ManicDigger
             {
                 GL.Disable(EnableCap.Fog);
             }
-
-            Application.DoEvents();
-            //Sleep is required in Mono for running the terrain background thread.
-            Thread.Sleep(0);
-            //Console.WriteLine("pos:" + player.playerposition);
-            //Console.WriteLine("orientation:" + player.playerorientation);
-
+            if (IsMono){                
+               Application.DoEvents();
+               Thread.Sleep(0);
+           }
             var deltaTime = e.Time;
 
             accumulator += deltaTime;
@@ -3120,16 +3139,23 @@ namespace ManicDigger
         }
         void DeleteUnusedCachedTextures()
         {
-            foreach (var k in new List<Text>(cachedTextTextures.Keys))
+            List<Text> toremove = new List<Text>();
+            foreach (var k in cachedTextTextures)
             {
-                var ct = cachedTextTextures[k];
-                if ((DateTime.Now - ct.lastuse).TotalSeconds > 1)
+                DateTime now = DateTime.UtcNow;
+                var ct = k.Value;
+                if ((now - ct.lastuse).TotalSeconds > 1)
                 {
                     GL.DeleteTexture(ct.textureId);
-                    cachedTextTextures.Remove(k);
+                    toremove.Add(k.Key);
                 }
             }
+            foreach (var k in toremove)
+            {
+                cachedTextTextures.Remove(k);
+            }
         }
+    
         public void Draw2dText(string text, float x, float y, float fontsize, Color? color)
         {
             if (text == null || text.Trim() == "")
@@ -3152,7 +3178,7 @@ namespace ManicDigger
                 cachedTextTextures.Add(t, ct);
             }
             ct = cachedTextTextures[t];
-            ct.lastuse = DateTime.Now;
+            ct.lastuse = DateTime.UtcNow;
             GL.Disable(EnableCap.AlphaTest);
             Draw2dTexture(ct.textureId, x, y, ct.size.Width, ct.size.Height, null);
             GL.Enable(EnableCap.AlphaTest);

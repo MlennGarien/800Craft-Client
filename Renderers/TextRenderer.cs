@@ -18,16 +18,16 @@ namespace ManicDigger
         public Color color;
         public override int GetHashCode()
         {
-            return ("" + text.GetHashCode() + fontsize.GetHashCode() + color.GetHashCode()).GetHashCode();
+            return text.GetHashCode() % fontsize.GetHashCode() % color.GetHashCode();
         }
         public override bool Equals(object obj)
         {
             if (obj is Text)
             {
                 Text other = (Text)obj;
-                return other.text.Equals(this.text)
-                    && other.fontsize.Equals(this.fontsize)
-                    && other.color.Equals(this.color);
+                return other.fontsize.Equals(this.fontsize)
+                    && other.color.Equals(this.color)
+                    && other.text.Equals(this.text);
             }
             return base.Equals(obj);
         }
@@ -161,7 +161,7 @@ namespace ManicDigger
                         {
                             if (currenttext != "")
                             {
-                                parts.Add(new TextPart() { text = ManicDigger.Network.PlayerSkinDownloader.StripColors(currenttext), color = currentcolor });
+                                parts.Add(new TextPart() { text = currenttext, color = currentcolor });
                             }
                             currenttext = "";
                             currentcolor = GetColor(color.Value);
