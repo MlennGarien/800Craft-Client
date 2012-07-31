@@ -117,7 +117,7 @@ namespace ManicDigger
                 }
                 if (recv == 0)
                 {
-                    //disconnected
+                    InvokeServerStatus();
                     return;
                 }
                 for (int i = 0; i < recv; i++)
@@ -235,15 +235,18 @@ namespace ManicDigger
                         totalread += 2 + 1024 + 1; if (received.Count < totalread) { return 0; }
                         int chunkLength = NetworkHelper.ReadInt16(br);
                         byte[] chunkData = br.ReadBytes(1024);
-                        BinaryWriter bw1 = new BinaryWriter(receivedMapStream);
-                        byte[] chunkDataWithoutPadding = new byte[chunkLength];
-                        for (int i = 0; i < chunkLength; i++)
+                        lock (chunkData)
                         {
-                            chunkDataWithoutPadding[i] = chunkData[i];
+                            BinaryWriter bw1 = new BinaryWriter(receivedMapStream);
+                            byte[] chunkDataWithoutPadding = new byte[chunkLength];
+                            for (int i = 0; i < chunkLength; i++)
+                            {
+                                chunkDataWithoutPadding[i] = chunkData[i];
+                            }
+                            bw1.Write(chunkDataWithoutPadding);
+                            MapLoadingPercentComplete = br.ReadByte();
+                            InvokeMapLoadingProgress(MapLoadingPercentComplete, (int)receivedMapStream.Length);
                         }
-                        bw1.Write(chunkDataWithoutPadding);
-                        MapLoadingPercentComplete = br.ReadByte();
-                        InvokeMapLoadingProgress(MapLoadingPercentComplete, (int)receivedMapStream.Length);
                     }
                     break;
                 case MinecraftServerPacketId.LevelFinalize:
@@ -391,7 +394,8 @@ namespace ManicDigger
                     {
                         totalread += NetworkHelper.StringLength; if (received.Count < totalread) { return 0; }
                         string disconnectReason = NetworkHelper.ReadString64(br);
-                        throw new Exception(disconnectReason);
+                        ManicDiggerGameWindow.Disconnected = true;
+                        break;
                     }
                 case MinecraftServerPacketId.ExtendedPacketCommand:
                     {
@@ -430,7 +434,9 @@ namespace ManicDigger
                     break;
                 default:
                     {
-                        throw new Exception("Invalid packet id");
+                        string disconnectReason = NetworkHelper.ReadString64(br);
+                        ManicDiggerGameWindow.Disconnected = true;
+                        break;
                     }
             }
             return totalread;
@@ -446,6 +452,11 @@ namespace ManicDigger
                     ProgressBytes = progressBytes
                 });
             }
+        }
+
+        private void InvokeServerStatus()
+        {
+            ManicDiggerGameWindow.Disconnected = true;
         }
         public bool ENABLE_CHATLOG = true;
         private void ChatLog(string p)
@@ -570,6 +581,7 @@ namespace ManicDigger
         }
         #region IClientNetwork Members
         public event EventHandler<MapLoadingProgressEventArgs> MapLoadingProgress;
+        public event EventHandler<SessionStatusEventArgs> SessionStatus;
         #endregion
         Dictionary<int, bool> enablePlayerUpdatePosition = new Dictionary<int, bool>();
         #region INetworkClient Members
@@ -607,6 +619,7 @@ namespace ManicDigger
         DespawnPlayer = 12,
         Message = 13,
         DisconnectPlayer = 14,
+        SetPermission = 15,
 
         ExtendedPacketCommand = 100,
         ExtendedPacketTick = 101,

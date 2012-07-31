@@ -1318,7 +1318,7 @@ namespace ManicDigger
             oldclientgame.Dispose();
             newnetwork.MapLoaded += new EventHandler<MapLoadedEventArgs>(network_MapLoaded);
             newnetwork.MapLoadingProgress += new EventHandler<MapLoadingProgressEventArgs>(newnetwork_MapLoadingProgress);
-
+            
             oldnetwork.Dispose();
 
             new MethodInvoker(() =>
@@ -1347,6 +1347,7 @@ namespace ManicDigger
                     catch (Exception e)
                     {
                         Console.WriteLine(e.ToString());
+                        GuiStateSetDisconnected();
                     }
                     if (logindata == null)
                     {
@@ -1380,6 +1381,7 @@ namespace ManicDigger
                 );
             }).BeginInvoke(null, null);
             GuiStateSetMapLoading();
+            
         }
         void newnetwork_MapLoadingProgress(object sender, MapLoadingProgressEventArgs e)
         {
@@ -1390,6 +1392,13 @@ namespace ManicDigger
             guistate = GuiState.MapLoading;
             freemouse = true;
             maploadingprogress = new MapLoadingProgressEventArgs();
+
+        }
+
+        private void GuiStateSetDisconnected()
+        {
+            guistate = GuiState.Disconnected;
+            freemouse = true;
         }
         List<MethodInvoker> frametickmainthreadtodo = new List<MethodInvoker>();
         void network_MapLoaded(object sender, MapLoadedEventArgs e)
@@ -2165,7 +2174,7 @@ namespace ManicDigger
                 camera = FppCamera();
             GL.LoadMatrix(ref camera);
             m_theModelView = camera;
-            bool drawgame = guistate != GuiState.MapLoading;
+            bool drawgame = guistate != GuiState.MapLoading || guistate!=GuiState.Disconnected;
             if (drawgame)
             {
                 DrawSkySphere();
@@ -2516,6 +2525,15 @@ namespace ManicDigger
         {
             return File.Exists(mapManipulator.defaultminesave);
         }
+
+        void DrawDisconnected()
+        {
+            ChatScreenExpireTimeSeconds = 0;
+            Draw2dTexture(WhiteTexture(), 0, 0, 800, 600, null, Color.Black);
+            string connecting = "Disconnected from Server...";
+            Draw2dText(network.ServerName, xcenter(TextSize(network.ServerName, 14).Width), Height / 2 - 150, 14, Color.Yellow);
+            Draw2dText(connecting, xcenter(TextSize(connecting, 14).Width), Height / 2 - 50, 14, Color.Red);
+        }
         bool? savegameexists;
         void DrawMainMenu()
         {
@@ -2547,6 +2565,7 @@ namespace ManicDigger
             Inventory,
             MapLoading,
             CraftingRecipes,
+            Disconnected
         }
         private void DrawMouseCursor()
         {
@@ -2561,15 +2580,23 @@ namespace ManicDigger
             {
                 case GuiState.Normal:
                     {
-                        if (!ENABLE_DRAW2D)
+                        if (Disconnected)
                         {
-                            if (GuiTyping == TypingState.Typing)
+                            DrawDisconnected();
+                            FreeMouse = true;
+                        }
+                        else
+                        {
+                            if (!ENABLE_DRAW2D)
                             {
-                                DrawChatLines(true);
-                                DrawTypingBuffer();
+                                if (GuiTyping == TypingState.Typing)
+                                {
+                                    DrawChatLines(true);
+                                    DrawTypingBuffer();
+                                }
+                                PerspectiveMode();
+                                return;
                             }
-                            PerspectiveMode();
-                            return;
                         }
                         if (cameratype != CameraType.Overhead)
                         {
@@ -2775,6 +2802,7 @@ namespace ManicDigger
         }
         bool drawblockinfo = false;
         MapLoadingProgressEventArgs maploadingprogress;
+        public static bool Disconnected = false;
         private void DrawMapLoading()
         {
             string connecting = "Connecting...";
@@ -3070,7 +3098,7 @@ namespace ManicDigger
                 Draw2dText(chatlines2[i].text, 20, 90f + i * 25f, chatfontsize, Color.White);
             }
         }
-        SizeF TextSize(string text, float fontsize)
+        static SizeF TextSize(string text, float fontsize)
         {
             var font = new Font("Verdana", fontsize);
             Bitmap bmp = new Bitmap(1, 1);
@@ -3104,7 +3132,7 @@ namespace ManicDigger
                 }
             }
         }
-        void Draw2dText(string text, float x, float y, float fontsize, Color? color)
+        public void Draw2dText(string text, float x, float y, float fontsize, Color? color)
         {
             if (text == null || text.Trim() == "")
             {

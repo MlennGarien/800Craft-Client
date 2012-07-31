@@ -161,7 +161,7 @@ namespace ManicDigger
                         {
                             if (currenttext != "")
                             {
-                                parts.Add(new TextPart() { text = currenttext, color = currentcolor });
+                                parts.Add(new TextPart() { text = ManicDigger.Network.PlayerSkinDownloader.StripColors(currenttext), color = currentcolor });
                             }
                             currenttext = "";
                             currentcolor = GetColor(color.Value);
