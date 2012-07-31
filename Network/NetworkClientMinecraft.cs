@@ -394,6 +394,7 @@ namespace ManicDigger
                     {
                         totalread += NetworkHelper.StringLength; if (received.Count < totalread) { return 0; }
                         string disconnectReason = NetworkHelper.ReadString64(br);
+                        ManicDiggerGameWindow.DisconnectMessage = disconnectReason;
                         ManicDiggerGameWindow.Disconnected = true;
                         break;
                     }
@@ -435,6 +436,7 @@ namespace ManicDigger
                 default:
                     {
                         string disconnectReason = NetworkHelper.ReadString64(br);
+                        ManicDiggerGameWindow.DisconnectMessage = disconnectReason;
                         ManicDiggerGameWindow.Disconnected = true;
                         break;
                     }

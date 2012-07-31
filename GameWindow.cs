@@ -1347,7 +1347,8 @@ namespace ManicDigger
                     catch (Exception e)
                     {
                         Console.WriteLine(e.ToString());
-                        GuiStateSetDisconnected();
+                        DisconnectMessage = e.Message;
+                        Disconnected = true;
                     }
                     if (logindata == null)
                     {
@@ -1395,11 +1396,6 @@ namespace ManicDigger
 
         }
 
-        private void GuiStateSetDisconnected()
-        {
-            guistate = GuiState.Disconnected;
-            freemouse = true;
-        }
         List<MethodInvoker> frametickmainthreadtodo = new List<MethodInvoker>();
         void network_MapLoaded(object sender, MapLoadedEventArgs e)
         {
@@ -2526,14 +2522,14 @@ namespace ManicDigger
             return File.Exists(mapManipulator.defaultminesave);
         }
 
-        void DrawDisconnected()
+        void DrawDisconnected(string Message)
         {
             ChatScreenExpireTimeSeconds = 0;
-            Draw2dTexture(WhiteTexture(), 0, 0, 800, 600, null, Color.Black);
-            string connecting = "Disconnected from Server...";
+            Draw2dTexture(WhiteTexture(), 0, 0, Width, Height, null, Color.Black);
             Draw2dText(network.ServerName, xcenter(TextSize(network.ServerName, 14).Width), Height / 2 - 150, 14, Color.Yellow);
-            Draw2dText(connecting, xcenter(TextSize(connecting, 14).Width), Height / 2 - 50, 14, Color.Red);
+            Draw2dText(Message, xcenter(TextSize(Message, 14).Width), Height / 2 - 50, 14, Color.Red);
         }
+
         bool? savegameexists;
         void DrawMainMenu()
         {
@@ -2567,6 +2563,7 @@ namespace ManicDigger
             CraftingRecipes,
             Disconnected
         }
+        public static string DisconnectMessage;
         private void DrawMouseCursor()
         {
             Draw2dBitmapFile(Path.Combine("gui", "mousecursor.png"), mouse_current.X, mouse_current.Y, 20, 20);
@@ -2580,9 +2577,9 @@ namespace ManicDigger
             {
                 case GuiState.Normal:
                     {
-                        if (Disconnected)
+                        if (Disconnected == true)
                         {
-                            DrawDisconnected();
+                            DrawDisconnected( DisconnectMessage);
                             FreeMouse = true;
                         }
                         else
