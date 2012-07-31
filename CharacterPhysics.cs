@@ -49,10 +49,15 @@ namespace ManicDigger
                 || (data.IsWaterTile(map.GetBlock(x, y, z)) && (!swimmingtop))
                 || data.IsEmptyForPhysics(map.GetBlock(x, y, z));
         }
-        public static float walldistance = 0.3f;
-        public static float characterheight = 1.5f;
-        public float gravity = 0.3f;
-        public float WaterGravityMultiplier = 3;
+        public static float walldistance = 0.3f; // char size
+        public static float characterheight = 1.2f;
+        public float gravity = 0.023f; // was 0.3f- no longer is constant speed
+        public float maxgravity = -0.5f; // new - sets a maximum fall speed
+        public bool jumping = false; // new - just to keep you from jumping over and over in the air
+        public float thrust = 0f;
+        public float thrustspeed = 0.1f;
+        public float fallspeed = 0.0f; // new - adjusts with gravity and jumping for your actual Z movement
+        public float WaterGravityMultiplier = 15;
         public bool enable_acceleration = true;
         public class MoveInfo
         {
@@ -78,7 +83,32 @@ namespace ManicDigger
             {
                 if (!move.Swimming)
                 {
-                    state.movedz += -gravity;//gravity
+                    // new stuff here
+                    fallspeed -= gravity;
+                    if (fallspeed < maxgravity)
+                    {
+                        fallspeed = maxgravity;
+                    }
+
+
+                    if (thrust > 0 && fallspeed < 0)
+                    {
+                        fallspeed = thrustspeed;
+                        thrust -= 1;
+                    }
+                    else
+                    {
+                        thrust = 0;
+                    }
+
+                    if (this.reachedceiling && fallspeed > 0f)
+                    {
+                        fallspeed = -0.2f;
+                        state.jumpacceleration = 0f;
+                    }
+                    state.movedz += fallspeed;
+
+                    // state.movedz += -gravity;//gravity  // old version
                 }
                 else
                 {
@@ -107,9 +137,10 @@ namespace ManicDigger
                 }
                 state.curspeed = diff1 * move.movespeednow;
             }
-            var newposition = state.playerposition + (state.curspeed) * (float)dt;
+            Vector3 newposition;
             if (!(move.ENABLE_FREEMOVE))
             {
+                newposition = state.playerposition + state.curspeed;
                 if (!move.Swimming)
                 {
                     newposition.Y = state.playerposition.Y;
@@ -123,19 +154,16 @@ namespace ManicDigger
                 }
                 newposition = state.playerposition + diff * (float)dt;
             }
+            else
+            {
+                newposition = state.playerposition + (state.curspeed) * (float)dt;
+            }
             newposition.Y += state.movedz * (float)dt;
             Vector3 previousposition = state.playerposition;
             if (!move.ENABLE_NOCLIP)
             {
                 this.swimmingtop = move.wantsjump && !move.Swimming;
-                try
-                {
-                    state.playerposition = WallSlide(state.playerposition, newposition);
-                }
-                catch
-                {
-                    // The block probably doesn't exist...
-                }
+                state.playerposition = WallSlide(state.playerposition, newposition);
             }
             else
             {
@@ -145,10 +173,16 @@ namespace ManicDigger
             {
                 state.isplayeronground = state.playerposition.Y == previousposition.Y;
                 {
-                    if (move.wantsjump && state.isplayeronground && state.jumpacceleration <= 0)
+
+                    if (move.wantsjump && state.isplayeronground && state.jumpacceleration <= 0 && jumping == false) // added jumping check
                     {
+
                         state.jumpacceleration = move.jumpstartacceleration;
+                        fallspeed = state.jumpacceleration * 9;
+                        jumping = true;
                         soundnow = true;
+
+
                     }
                     if (state.jumpacceleration < 0)
                     {
@@ -157,7 +191,7 @@ namespace ManicDigger
                     }
                     if (state.jumpacceleration > 0)
                     {
-                        state.jumpacceleration -= (float)dt * 1.8f;
+                        state.jumpacceleration -= (float)dt * 2.8f;
                     }
                     if (!this.reachedceiling)
                     {
@@ -168,9 +202,11 @@ namespace ManicDigger
             else
             {
                 state.isplayeronground = true;
+
             }
             if (state.isplayeronground)
             {
+
                 state.movedz = Math.Max(0, state.movedz);
             }
         }
@@ -220,6 +256,7 @@ namespace ManicDigger
                         if (!newempty)
                         {
                             reachedwall = true;
+
                             playerposition.Z = oldposition.Z;
                         }
                     }
@@ -227,8 +264,19 @@ namespace ManicDigger
                     {
                         if (!newempty)
                         {
-                            playerposition.Y += 0.5f;
-                            goto ok;
+                            bool nextempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                                && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                            if (!nextempty)
+                            {
+                                reachedwall = true;
+                                playerposition.Z = oldposition.Z;
+
+                            }
+                            else
+                            {
+                                playerposition.Y += 0.5f;
+                                goto ok;
+                            }
                         }
                     }
                 }
@@ -253,32 +301,24 @@ namespace ManicDigger
                     {
                         if (!newempty)
                         {
-                            playerposition.Y += 0.5f;
-                            goto ok;
+                            bool nextempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                                && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                            if (!nextempty)
+                            {
+                                reachedwall = true;
+                                playerposition.X = oldposition.X;
+
+                            }
+                            else
+                            {
+                                playerposition.Y += 0.5f;
+                                goto ok;
+                            }
                         }
                     }
                 }
             }
-            //top
-            {
-                var qnewposition = newposition + new Vector3(0, -walldistance, 0);
-                int x = (int)Math.Floor(qnewposition.X);
-                int y = (int)Math.Floor(qnewposition.Z);
-                int z = (int)Math.Floor(qnewposition.Y);
-                float a = walldistance;
-                bool newfull = (!IsTileEmptyForPhysics(x, y, z))
-                    || (qnewposition.X - Math.Floor(qnewposition.X) <= a && (!IsTileEmptyForPhysics(x - 1, y, z)) && (IsTileEmptyForPhysics(x - 1, y, z + 1)))
-                    || (qnewposition.X - Math.Floor(qnewposition.X) >= (1 - a) && (!IsTileEmptyForPhysics(x + 1, y, z)) && (IsTileEmptyForPhysics(x + 1, y, z + 1)))
-                    || (qnewposition.Z - Math.Floor(qnewposition.Z) <= a && (!IsTileEmptyForPhysics(x, y - 1, z)) && (IsTileEmptyForPhysics(x, y - 1, z + 1)))
-                    || (qnewposition.Z - Math.Floor(qnewposition.Z) >= (1 - a) && (!IsTileEmptyForPhysics(x, y + 1, z)) && (IsTileEmptyForPhysics(x, y + 1, z + 1)));
-                if (newposition.Y - oldposition.Y < 0)
-                {
-                    if (newfull)
-                    {
-                        playerposition.Y = oldposition.Y;
-                    }
-                }
-            }
+
             //right
             {
                 var qnewposition = newposition + new Vector3(0, 0, -walldistance);
@@ -290,6 +330,7 @@ namespace ManicDigger
                     {
                         if (!newempty)
                         {
+
                             reachedwall = true;
                             playerposition.Z = oldposition.Z;
                         }
@@ -298,8 +339,22 @@ namespace ManicDigger
                     {
                         if (!newempty)
                         {
-                            playerposition.Y += 0.5f;
-                            goto ok;
+
+                            bool nextempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                                && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                            if (!nextempty)
+                            {
+                                reachedwall = true;
+                                playerposition.Z = oldposition.Z;
+
+                            }
+                            else
+                            {
+                                playerposition.Y += 0.5f;
+                                goto ok;
+                            }
+
+
                         }
                     }
                 }
@@ -323,8 +378,19 @@ namespace ManicDigger
                     {
                         if (!newempty)
                         {
-                            playerposition.Y += 0.5f;
-                            goto ok;
+                            bool nextempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                                && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                            if (!nextempty)
+                            {
+                                reachedwall = true;
+                                playerposition.X = oldposition.X;
+
+                            }
+                            else
+                            {
+                                playerposition.Y += 0.5f;
+                                goto ok;
+                            }
                         }
                     }
                 }
@@ -337,8 +403,35 @@ namespace ManicDigger
                 {
                     if (!newempty)
                     {
+
                         playerposition.Y = oldposition.Y;
                         reachedceiling = true;
+
+                    }
+                }
+            }
+
+            //top
+            {
+                var qnewposition = newposition + new Vector3(0, -walldistance, 0);
+                qnewposition.X = playerposition.X;
+                qnewposition.Z = playerposition.Z;
+                int x = (int)Math.Floor(qnewposition.X);
+                int y = (int)Math.Floor(qnewposition.Z);
+                int z = (int)Math.Floor(qnewposition.Y);
+                float a = walldistance;
+                bool newfull = (!IsTileEmptyForPhysics(x, y, z))
+                    || (qnewposition.X - Math.Floor(qnewposition.X) <= a && (!IsTileEmptyForPhysics(x - 1, y, z)) && (IsTileEmptyForPhysics(x - 1, y, z + 1)))
+                    || (qnewposition.X - Math.Floor(qnewposition.X) >= (1 - a) && (!IsTileEmptyForPhysics(x + 1, y, z)) && (IsTileEmptyForPhysics(x + 1, y, z + 1)))
+                    || (qnewposition.Z - Math.Floor(qnewposition.Z) <= a && (!IsTileEmptyForPhysics(x, y - 1, z)) && (IsTileEmptyForPhysics(x, y - 1, z + 1)))
+                    || (qnewposition.Z - Math.Floor(qnewposition.Z) >= (1 - a) && (!IsTileEmptyForPhysics(x, y + 1, z)) && (IsTileEmptyForPhysics(x, y + 1, z + 1)));
+                if (newposition.Y - oldposition.Y < 0)
+                {
+                    if (newfull)
+                    {
+                        playerposition.Y = oldposition.Y;
+                        jumping = false;
+                        fallspeed = 0f;
                     }
                 }
             }
@@ -352,7 +445,21 @@ namespace ManicDigger
             }
             if (isonstairs)
             {
-                playerposition.Y = ((int)Math.Floor(playerposition.Y)) + 0.5f + walldistance;
+                // new detection- checks if we should connect with a stair- and makes sure we aren't going up from jumping already
+                if (playerposition.Y < ((int)Math.Floor(playerposition.Y)) + 0.5f + walldistance && fallspeed <= 0f)
+                {
+                    jumping = false;
+                    fallspeed = 0f;
+                    playerposition.Y += 0.03f;
+
+                    if (playerposition.Y > ((int)Math.Floor(playerposition.Y)) + 0.4f + walldistance)
+                    {
+                        // playerposition.Y = oldposition.Y;
+                        playerposition.Y = ((int)Math.Floor(playerposition.Y)) + 0.5f + walldistance;
+                    }
+
+                }
+                //playerposition.Y = ((int)Math.Floor(playerposition.Y)) + 0.5f + walldistance;
             }
             return playerposition;
         }
