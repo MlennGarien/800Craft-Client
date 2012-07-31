@@ -1768,7 +1768,7 @@ namespace ManicDigger
             }
             if (Keyboard[OpenTK.Input.Key.ShiftLeft])
             {
-                movespeednow *= 10f;
+                movespeednow *= 12f;
             }
             if (Keyboard[OpenTK.Input.Key.ControlLeft])
             {
@@ -1974,13 +1974,15 @@ namespace ManicDigger
                         (int)ToMapPos(player.playerposition).X,
                         (int)ToMapPos(player.playerposition).Y,
                         (int)ToMapPos(player.playerposition).Z);
-            BlockPosSide pick0;
             bool playertileemptyclose = IsTileEmptyForPhysicsClose(
-(int)ToMapPos(player.playerposition).X,
-(int)ToMapPos(player.playerposition).Y,
-(int)ToMapPos(player.playerposition).Z);
-            if (pick2.Count > 0 && ((pickdistanceok && (playertileempty || (playertileemptyclose)) ))
+                        (int)ToMapPos(player.playerposition).X,
+                        (int)ToMapPos(player.playerposition).Y,
+                        (int)ToMapPos(player.playerposition).Z);
+            BlockPosSide pick0;
+            if (pick2.Count > 0 &&
+                ((pickdistanceok && (playertileempty || (playertileemptyclose)) )
                 || overheadcamera)
+                )
             {
                 pickcubepos = pick2[0].Current();
                 pickcubepos = new Vector3((int)pickcubepos.X, (int)pickcubepos.Y, (int)pickcubepos.Z);
@@ -2588,7 +2590,7 @@ namespace ManicDigger
         {
             Draw2dBitmapFile(Path.Combine("gui", "mousecursor.png"), mouse_current.X, mouse_current.Y, 20, 20);
         }
-        int chatfontsize = 12;
+        int chatfontsize = 10;
         Size? aimsize;
         private void Draw2d()
         {

@@ -179,6 +179,35 @@ namespace ManicDigger
             }
             return parts;
         }
+        /// <summary> Strips all ampersand color codes and doubled-up ampersands. </summary>
+        public static string StripColors(string input)
+        {
+            if (input == null) throw new ArgumentNullException("input");
+            if (input.IndexOf('&') == -1)
+            {
+                return input;
+            }
+            else
+            {
+                StringBuilder output = new StringBuilder(input.Length);
+                for (int i = 0; i < input.Length; i++)
+                {
+                    if (input[i] == '&')
+                    {
+                        if (i == input.Length - 1)
+                        {
+                            break;
+                        }
+                        i++;
+                    }
+                    else
+                    {
+                        output.Append(input[i]);
+                    }
+                }
+                return output.ToString();
+            }
+        }
         private Color GetColor(int currentcolor)
         {
             switch (currentcolor)
