@@ -466,8 +466,7 @@ namespace ManicDigger
                     {
                         totalread += NetworkHelper.StringLength; if (received.Count < totalread) { return 0; }
                         string disconnectReason = NetworkHelper.ReadString64(br);
-                        System.Windows.Forms.MessageBox.Show(disconnectReason, "Error");
-                        break;
+                        throw new Exception(disconnectReason);
                     }
                 case MinecraftServerPacketId.ExtendedPacketCommand:
                     {

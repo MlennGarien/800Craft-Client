@@ -140,8 +140,6 @@ using System;
         int TileIdLeaves = 18;
         int TileIdStone = 1;
         int TileIdGoldOre = 14;
-        int TileIdIronOre = 15;
-        int TileIdCoalOre = 16;
         int TileIdLava = 11;
         float treedensity = 0.008f;
         int GetBlock(int x, int y, int z, int height)

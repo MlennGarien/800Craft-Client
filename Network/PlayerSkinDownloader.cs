@@ -123,7 +123,7 @@ namespace ManicDigger.Network
                             texturestoload[name] = skindata;
                         }
                     }
-                    catch (Exception e)
+                    catch
                     {
                         //Console.WriteLine(e);
                         continue;

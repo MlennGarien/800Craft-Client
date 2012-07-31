@@ -336,6 +336,5 @@ namespace ManicDigger
         float zzzy = -13.7f;
         float zzzposx = -0.2f;
         float zzzposy = -0.4f;
-        float attackprogress = 0;
     }
 }

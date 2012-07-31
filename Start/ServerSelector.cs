@@ -111,8 +111,6 @@ namespace ManicDigger
                 RememberPassword(textBox2.Text, textBox3.Text);
             }
         }
-
-        
         void c_Progress(object sender, ProgressEventArgs e)
         {
             progressBar1.Value = e.ProgressPercent;
@@ -142,7 +140,6 @@ namespace ManicDigger
             this.LoginPassword = logindata.mppass;
             this.LoginPort = logindata.port.ToString();
             this.LoginUser = textBox2.Text;
-            
         }
         public string LoginIp;
         public string LoginPort;
@@ -187,11 +184,6 @@ namespace ManicDigger
         private static string GetMinecraftPasswordFilePath()
         {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MinecraftPassword.txt");
-        }
-
-        private void textBox4_TextChanged(object sender, EventArgs e)
-        {
-
         }
     }
 }

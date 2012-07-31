@@ -599,7 +599,6 @@ namespace ManicDigger
             }
         }
         Dictionary<Vector3, int[]> batchedblocks = new Dictionary<Vector3, int[]>();
-        Vector3 lastplayerposition;
         MeshBatcher batcher = new MeshBatcher();
         public void UpdateAllTiles()
         {

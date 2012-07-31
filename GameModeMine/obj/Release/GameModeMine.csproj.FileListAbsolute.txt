@@ -15,3 +15,4 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.csprojResolveAssemblyReference.cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\bin\Release\OpenTK.dll
