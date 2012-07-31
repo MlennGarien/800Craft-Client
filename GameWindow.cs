@@ -680,8 +680,32 @@ namespace ManicDigger
             SetAmbientLight(terraincolor);
             GL.Enable(EnableCap.ColorMaterial);
             GL.ColorMaterial(MaterialFace.FrontAndBack, ColorMaterialParameter.AmbientAndDiffuse);
+            KeyPress += new EventHandler<OpenTK.KeyPressEventArgs>(ManicDiggerGameWindow_KeyPress);
             GL.ShadeModel(ShadingModel.Smooth);
             System.Windows.Forms.Cursor.Hide();
+        }
+
+        void ManicDiggerGameWindow_KeyPress(object sender, OpenTK.KeyPressEventArgs e)
+        {
+            if ((e.KeyChar == 't' || e.KeyChar == 'T') && GuiTyping == TypingState.None)
+            {
+                GuiTyping = TypingState.Typing;
+                GuiTypingBuffer = "";
+                return;
+            }
+            if (e.KeyChar == '/' && GuiTyping == TypingState.None)
+            {
+                GuiTyping = TypingState.Typing;
+                GuiTypingBuffer = "";
+                return;
+            }
+            if (GuiTyping == TypingState.Typing)
+            {
+                char c = e.KeyChar; if (char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || char.IsPunctuation(c) || char.IsSeparator(c) || char.IsSymbol(c))
+                {
+                    GuiTypingBuffer += e.KeyChar;
+                }
+            }
         }
         float overheadcameradistance = 10;
         float tppcameradistance = 3;
@@ -944,11 +968,6 @@ namespace ManicDigger
                     menustate = new MenuState();
                     FreeMouse = true;
                 }
-                if (e.Key == OpenTK.Input.Key.T && GuiTyping == TypingState.None)
-                {
-                    GuiTyping = TypingState.Typing;
-                    return;
-                }
                 if (e.Key == OpenTK.Input.Key.Enter || e.Key == OpenTK.Input.Key.KeypadEnter)
                 {
                     if (GuiTyping == TypingState.Typing)
@@ -972,7 +991,6 @@ namespace ManicDigger
                 if (GuiTyping == TypingState.Typing)
                 {
                     var key = e.Key;
-                    string c = "";
                     if (key == OpenTK.Input.Key.BackSpace)
                     {
                         if (GuiTypingBuffer.Length > 0)
@@ -992,102 +1010,6 @@ namespace ManicDigger
                             return;
                         }
                     }
-                    if (key == OpenTK.Input.Key.Q) { c += "q"; }
-                    if (key == OpenTK.Input.Key.W) { c += "w"; }
-                    if (key == OpenTK.Input.Key.E) { c += "e"; }
-                    if (key == OpenTK.Input.Key.R) { c += "r"; }
-                    if (key == OpenTK.Input.Key.T) { c += "t"; }
-                    if (key == OpenTK.Input.Key.Y) { c += "y"; }
-                    if (key == OpenTK.Input.Key.U) { c += "u"; }
-                    if (key == OpenTK.Input.Key.I) { c += "i"; }
-                    if (key == OpenTK.Input.Key.O) { c += "o"; }
-                    if (key == OpenTK.Input.Key.P) { c += "p"; }
-
-                    if (key == OpenTK.Input.Key.A) { c += "a"; }
-                    if (key == OpenTK.Input.Key.S) { c += "s"; }
-                    if (key == OpenTK.Input.Key.D) { c += "d"; }
-                    if (key == OpenTK.Input.Key.F) { c += "f"; }
-                    if (key == OpenTK.Input.Key.G) { c += "g"; }
-                    if (key == OpenTK.Input.Key.H) { c += "h"; }
-                    if (key == OpenTK.Input.Key.J) { c += "j"; }
-                    if (key == OpenTK.Input.Key.K) { c += "k"; }
-                    if (key == OpenTK.Input.Key.L) { c += "l"; }
-
-                    if (key == OpenTK.Input.Key.Z) { c += "z"; }
-                    if (key == OpenTK.Input.Key.X) { c += "x"; }
-                    if (key == OpenTK.Input.Key.C) { c += "c"; }
-                    if (key == OpenTK.Input.Key.V) { c += "v"; }
-                    if (key == OpenTK.Input.Key.B) { c += "b"; }
-                    if (key == OpenTK.Input.Key.N) { c += "n"; }
-                    if (key == OpenTK.Input.Key.M) { c += "m"; }
-
-                    if (key == OpenTK.Input.Key.Comma) { c += ","; }
-                    if (key == OpenTK.Input.Key.Period) { c += "."; }
-                    if (key == OpenTK.Input.Key.Number0) { c += "0"; }
-                    if (key == OpenTK.Input.Key.Number1) { c += "1"; }
-                    if (key == OpenTK.Input.Key.Number2) { c += "2"; }
-                    if (key == OpenTK.Input.Key.Number3) { c += "3"; }
-                    if (key == OpenTK.Input.Key.Number4) { c += "4"; }
-                    if (key == OpenTK.Input.Key.Number5) { c += "5"; }
-                    if (key == OpenTK.Input.Key.Number6) { c += "6"; }
-                    if (key == OpenTK.Input.Key.Number7) { c += "7"; }
-                    if (key == OpenTK.Input.Key.Number8) { c += "8"; }
-                    if (key == OpenTK.Input.Key.Number9) { c += "9"; }
-                    if (key == OpenTK.Input.Key.BackSlash) { c += "\\"; }
-                    if (key == OpenTK.Input.Key.Slash) { c += "/"; }
-                    if (key == OpenTK.Input.Key.Plus) { c += "="; }
-                    if (key == OpenTK.Input.Key.Minus) { c += "-"; }
-                    if (key == OpenTK.Input.Key.Space) { c += " "; }
-                    if (key == OpenTK.Input.Key.LBracket) { c += "["; }
-                    if (key == OpenTK.Input.Key.RBracket) { c += "]"; }
-                    if (key == OpenTK.Input.Key.Quote) { c += "'"; }
-                    if (key == OpenTK.Input.Key.Semicolon) { c += ";"; }
-                    if (key == OpenTK.Input.Key.Tilde) { c += "`"; }
-
-                    if (key == OpenTK.Input.Key.KeypadAdd) { c += "+"; }
-                    if (key == OpenTK.Input.Key.KeypadDecimal) { c += "."; }
-                    if (key == OpenTK.Input.Key.KeypadDivide) { c += "/"; }
-                    //if (key == OpenTK.Input.Key.KeypadMinus) { c += "-"; }
-                    if (key == OpenTK.Input.Key.KeypadMultiply) { c += "*"; }
-                    //if (key == OpenTK.Input.Key.KeypadPlus) { c += "+"; }
-                    if (key == OpenTK.Input.Key.KeypadSubtract) { c += "-"; }
-                    if (key == OpenTK.Input.Key.Keypad0) { c += "0"; }
-                    if (key == OpenTK.Input.Key.Keypad1) { c += "1"; }
-                    if (key == OpenTK.Input.Key.Keypad2) { c += "2"; }
-                    if (key == OpenTK.Input.Key.Keypad3) { c += "3"; }
-                    if (key == OpenTK.Input.Key.Keypad4) { c += "4"; }
-                    if (key == OpenTK.Input.Key.Keypad5) { c += "5"; }
-                    if (key == OpenTK.Input.Key.Keypad6) { c += "6"; }
-                    if (key == OpenTK.Input.Key.Keypad7) { c += "7"; }
-                    if (key == OpenTK.Input.Key.Keypad8) { c += "8"; }
-                    if (key == OpenTK.Input.Key.Keypad9) { c += "9"; }
-
-                    if (Keyboard[OpenTK.Input.Key.ShiftLeft] || Keyboard[OpenTK.Input.Key.ShiftRight])
-                    {
-                        c = c.ToUpper();
-                        if (c == "1") { c = "!"; }
-                        if (c == "2") { c = "@"; }
-                        if (c == "3") { c = "#"; }
-                        if (c == "4") { c = "$"; }
-                        if (c == "5") { c = "%"; }
-                        if (c == "6") { c = "^"; }
-                        if (c == "7") { c = "&"; }
-                        if (c == "8") { c = "*"; }
-                        if (c == "9") { c = "("; }
-                        if (c == "0") { c = ")"; }
-                        if (c == "-") { c = "_"; }
-                        if (c == "=") { c = "+"; }
-                        if (c == "[") { c = "{"; }
-                        if (c == "]") { c = "}"; }
-                        if (c == "\\") { c = "|"; }
-                        if (c == ";") { c = ":"; }
-                        if (c == "'") { c = "\""; }
-                        if (c == ",") { c = "<"; }
-                        if (c == ".") { c = ">"; }
-                        if (c == "/") { c = "?"; }
-                        if (c == "`") { c = "~"; }
-                    }
-                    GuiTypingBuffer += c;
                     if (key == OpenTK.Input.Key.Up)
                     {
                         typinglogpos--;
@@ -1116,19 +1038,6 @@ namespace ManicDigger
                 {
                     movespeed = basemovespeed * 1;
                     Log("Move speed: 1x.");
-                }
-                if (e.Key == OpenTK.Input.Key.F2)
-                {
-                    movespeed = basemovespeed * 10;
-                    Log("Move speed: 10x.");
-                }
-                if (e.Key == OpenTK.Input.Key.Slash)
-                {
-                    if (GuiTyping == TypingState.None)
-                    {
-                        GuiTyping = TypingState.Typing;
-                        GuiTypingBuffer = "/";
-                    }
                 }
                 if (e.Key == OpenTK.Input.Key.F9)
                 {
