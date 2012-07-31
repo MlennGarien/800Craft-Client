@@ -79,34 +79,29 @@ namespace ManicDigger
             }
             return output.ToArray();
         }
-        public static byte[] Decompress(byte[] fi)
+        public static byte[] Decompress(byte[] gzip)
         {
-            MemoryStream ms = new MemoryStream();
-            // Get the stream of the source file.
-            using (MemoryStream inFile = new MemoryStream(fi))
+            // Create a GZIP stream with decompression mode.
+            // ... Then create a buffer and write into while reading from the GZIP stream.
+            using (GZipStream stream = new GZipStream(new MemoryStream(gzip), CompressionMode.Decompress))
             {
-                // Get original file extension, for example "doc" from report.doc.gz.
-                //string curFile = fi.FullName;
-                //string origName = curFile.Remove(curFile.Length - fi.Extension.Length);
-
-                //Create the decompressed file.
-                //using (FileStream outFile = File.Create(origName))
+                const int size = 4096;
+                byte[] buffer = new byte[size];
+                using (MemoryStream memory = new MemoryStream())
                 {
-                    using (GZipStream Decompress = new GZipStream(inFile,
-                            CompressionMode.Decompress))
+                    int count = 0;
+                    do
                     {
-                        //Copy the decompression stream into the output file.
-                        byte[] buffer = new byte[4096];
-                        int numRead;
-                        while ((numRead = Decompress.Read(buffer, 0, buffer.Length)) != 0)
+                        count = stream.Read(buffer, 0, size);
+                        if (count > 0)
                         {
-                            ms.Write(buffer, 0, numRead);
+                            memory.Write(buffer, 0, count);
                         }
-                        //Console.WriteLine("Decompressed: {0}", fi.Name);
                     }
+                    while (count > 0);
+                    return memory.ToArray();
                 }
             }
-            return ms.ToArray();
         }
         public static byte[] Decompress(FileInfo fi)
         {

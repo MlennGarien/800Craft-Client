@@ -589,7 +589,7 @@ namespace ManicDigger
         }
         const bool ENABLE_FULLSCREEN = false;
         public ManicDiggerGameWindow()
-            : base(800, 600, GraphicsMode.Default, "",
+            : base(800, 600, new GraphicsMode(32, 24, 16, 32), "",
                 ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { }
         The3d the3d = new The3d();
         public int LoadTexture(string filename)

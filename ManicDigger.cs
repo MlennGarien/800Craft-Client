@@ -302,7 +302,7 @@ namespace ManicDigger
         }
         public void LoadMap(IMapStorage map, byte[] data)
         {
-            using (Stream s = new MemoryStream(GzipCompression.Decompress(data)))
+            using (GZipStream s = new GZipStream(new MemoryStream(data), CompressionMode.Decompress))
             {
                 StreamReader sr = new StreamReader(s);
                 XmlDocument d = new XmlDocument();
