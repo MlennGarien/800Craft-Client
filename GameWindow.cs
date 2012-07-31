@@ -973,10 +973,13 @@ namespace ManicDigger
                 {
                     if (GuiTyping == TypingState.Typing)
                     {
-                        typinglog.Add(GuiTypingBuffer);
-                        typinglogpos = typinglog.Count;
-                        ClientCommand(GuiTypingBuffer);
-                        GuiTypingBuffer = "";
+                        if (!Disconnected)
+                        {
+                            typinglog.Add(GuiTypingBuffer);
+                            typinglogpos = typinglog.Count;
+                            ClientCommand(GuiTypingBuffer);
+                            GuiTypingBuffer = "";
+                        }
                         GuiTyping = TypingState.None;
                     }
                     else if (GuiTyping == TypingState.None)
@@ -991,6 +994,7 @@ namespace ManicDigger
                 }
                 if (GuiTyping == TypingState.Typing)
                 {
+                    if (Disconnected) return;
                     var key = e.Key;
                     if (key == OpenTK.Input.Key.BackSpace)
                     {
@@ -2192,9 +2196,6 @@ namespace ManicDigger
                 camera = FppCamera();
             GL.LoadMatrix(ref camera);
             m_theModelView = camera;
-            bool drawgame = guistate != GuiState.MapLoading || guistate!=GuiState.Disconnected;
-            if (drawgame)
-            {
                 DrawSkySphere();
                 terrain.Draw();
 
@@ -2233,7 +2234,6 @@ namespace ManicDigger
                 {
                     weapon.DrawWeapon((float)e.Time);
                 }
-            }
             SetAmbientLight(Color.White);
             Draw2d();
             DrawPlayerNames();
@@ -2258,14 +2258,7 @@ namespace ManicDigger
             }
             playerskindownloader.Update(players.ToArray(), playertextures, playertexturedefault);
             string playername;
-            if (playerid == 255)
-            {
-                playername = username;
-            }
-            else
-            {
                 playername = clients.Players[playerid].Name;
-            }
             if (playername == null)
             {
                 playername = "";
@@ -2547,8 +2540,10 @@ namespace ManicDigger
         void DrawDisconnected(string Message)
         {
             ChatScreenExpireTimeSeconds = 0;
+            string disconnect = "Disconneted from the server...";
             Draw2dTexture(WhiteTexture(), 0, 0, Width, Height, null, Color.Black);
-            Draw2dText(network.ServerName, xcenter(TextSize(network.ServerName, 14).Width), Height / 2 - 150, 14, Color.Yellow);
+            Draw2dText(network.ServerName, xcenter(TextSize(network.ServerName, 14).Width), Height / 2 - 150, 14, Color.Teal);
+            Draw2dText(disconnect, xcenter(TextSize(disconnect, 14).Width), Height / 2 - 100, 14, Color.Yellow);
             Draw2dText(Message, xcenter(TextSize(Message, 14).Width), Height / 2 - 50, 14, Color.Red);
         }
 
