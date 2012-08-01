@@ -13,7 +13,6 @@ namespace ManicDigger
         public Vector3 curspeed;
         public float jumpacceleration = 0;
         public bool isplayeronground;
-
     }
     public class Acceleration
     {
@@ -50,18 +49,10 @@ namespace ManicDigger
                 || (data.IsWaterTile(map.GetBlock(x, y, z)) && (!swimmingtop))
                 || data.IsEmptyForPhysics(map.GetBlock(x, y, z));
         }
-
-        bool IsTileEmptyForStairs(int x, int y, int z)
-        {
-
-            return map.GetBlock(x, y, z) == data.TileIdSingleStairs;
-        }
-
-
-        public static float walldistance = 0.3f; // char size
-        public static float characterheight = 1.5f;
+        public static float walldistance = 0.3f;
+        public static float characterheight = 1.21f;
         public float gravity = 0.3f;
-        public float WaterGravityMultiplier = 15;
+        public float WaterGravityMultiplier = 3;
         public bool enable_acceleration = true;
         public class MoveInfo
         {
@@ -87,7 +78,7 @@ namespace ManicDigger
             {
                 if (!move.Swimming)
                 {
-                    state.movedz += -gravity; //gravity
+                    state.movedz += -gravity;//gravity
                 }
                 else
                 {
@@ -116,10 +107,9 @@ namespace ManicDigger
                 }
                 state.curspeed = diff1 * move.movespeednow;
             }
-            Vector3 newposition;
+            var newposition = state.playerposition + (state.curspeed) * (float)dt;
             if (!(move.ENABLE_FREEMOVE))
             {
-                newposition = state.playerposition + state.curspeed;
                 if (!move.Swimming)
                 {
                     newposition.Y = state.playerposition.Y;
@@ -133,18 +123,11 @@ namespace ManicDigger
                 }
                 newposition = state.playerposition + diff * (float)dt;
             }
-            else
-            {
-                newposition = state.playerposition + (state.curspeed) * (float)dt;
-            }
             newposition.Y += state.movedz * (float)dt;
             Vector3 previousposition = state.playerposition;
             if (!move.ENABLE_NOCLIP)
             {
                 this.swimmingtop = move.wantsjump && !move.Swimming;
-
-                // This is a temporary workaround for crashing at the top of the map.
-                // This needs to be cleaned up some other way.
                 try
                 {
                     state.playerposition = WallSlide(state.playerposition, newposition);
@@ -162,7 +145,6 @@ namespace ManicDigger
             {
                 state.isplayeronground = state.playerposition.Y == previousposition.Y;
                 {
-
                     if (move.wantsjump && state.isplayeronground && state.jumpacceleration <= 0)
                     {
                         state.jumpacceleration = move.jumpstartacceleration;
@@ -175,7 +157,7 @@ namespace ManicDigger
                     }
                     if (state.jumpacceleration > 0)
                     {
-                        state.jumpacceleration -= (float)dt * 2.8f;
+                        state.jumpacceleration -= (float)dt * 1.8f;
                     }
                     if (!this.reachedceiling)
                     {
@@ -186,11 +168,9 @@ namespace ManicDigger
             else
             {
                 state.isplayeronground = true;
-
             }
             if (state.isplayeronground)
             {
-
                 state.movedz = Math.Max(0, state.movedz);
             }
         }
@@ -240,7 +220,6 @@ namespace ManicDigger
                         if (!newempty)
                         {
                             reachedwall = true;
-
                             playerposition.Z = oldposition.Z;
                         }
                     }
@@ -311,7 +290,6 @@ namespace ManicDigger
                     {
                         if (!newempty)
                         {
-
                             reachedwall = true;
                             playerposition.Z = oldposition.Z;
                         }
@@ -359,10 +337,8 @@ namespace ManicDigger
                 {
                     if (!newempty)
                     {
-
                         playerposition.Y = oldposition.Y;
                         reachedceiling = true;
-
                     }
                 }
             }

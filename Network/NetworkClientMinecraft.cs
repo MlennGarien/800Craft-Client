@@ -165,7 +165,7 @@ namespace ManicDigger
             bw.Write((byte)MinecraftClientPacketId.PositionandOrientation);
             bw.Write((byte)255);//player id, self
             NetworkHelper.WriteInt16(bw, (short)((position.X) * 32));//gfd1
-            NetworkHelper.WriteInt16(bw, (short)((position.Y + CharacterPhysics.characterheight) * 32));
+            NetworkHelper.WriteInt16(bw, (short)((position.Y + CharacterPhysics.characterheight) * 32 + 6)); //
             NetworkHelper.WriteInt16(bw, (short)(position.Z * 32));
 
             bw.Write(NetworkHelper.HeadingByte(orientation));
