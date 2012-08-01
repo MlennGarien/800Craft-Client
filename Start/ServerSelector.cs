@@ -16,29 +16,21 @@ namespace ManicDigger
         {
             InitializeComponent();
         }
+        public LoginClientMinecraft c;
+        public List<ServerInfo> items;
+
         private void ServerSelector_Load(object sender, EventArgs e)
         {
-            webBrowser1.Url = new Uri("http://fragmer.net/md/");
-            webBrowser1.Navigating += new WebBrowserNavigatingEventHandler(webBrowser1_Navigating);
             webBrowser2.Navigating += new WebBrowserNavigatingEventHandler(webBrowser2_Navigating);
             LoadPassword();
         }
         void webBrowser1_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
-            string prefix = "http://fragmer.net/md/play.php?server=";
-            if (!e.Url.AbsoluteUri.StartsWith(prefix))
-            {
-                //e.Cancel = true;
-                return;
-            }
-            SelectedServer = e.Url.AbsoluteUri.Substring(prefix.Length);
-            SelectedServerMinecraft = false;
-            Cookie = webBrowser1.Document.Cookie;
-            Close();
+
         }
         void webBrowser2_Navigating(object sender, WebBrowserNavigatingEventArgs e)
         {
-            if (!e.Url.AbsoluteUri.StartsWith("http://minecraft.net/"))
+            if (!e.Url.AbsoluteUri.StartsWith("http://www.minecraft.net/"))
             {
                 return;
             }
@@ -82,34 +74,76 @@ namespace ManicDigger
         }
         private void button3_Click(object sender, EventArgs e)
         {
-            LoginClientMinecraft c = new LoginClientMinecraft();
-            c.Progress += new EventHandler<ProgressEventArgs>(c_Progress);
             if (textBox2.Text == "" || textBox3.Text == "")
             {
                 MessageBox.Show("Enter username and password.");
                 return;
             }
-            var l = c.ServerList(textBox2.Text, textBox3.Text);
-            if (l.Count == 0)
+            if (c == null)
             {
-                MessageBox.Show("Problem. (invalid username or password?)");
-                return;
+                c = new LoginClientMinecraft();
+                c.Progress += new EventHandler<ProgressEventArgs>(c_Progress);
             }
-            StringBuilder html = new StringBuilder();
-            for (int i = 0; i < l.Count; i++)
-            {
-                var item = new ListViewItem();
-                item.Text = l[i].Name;
-                item.SubItems.Add(l[i].Players.ToString());
-                item.SubItems.Add(l[i].PlayersMax.ToString());
-                html.AppendLine(string.Format("<a href=\"{0}\"><b>{1}</b></a> {2}/{3} <br>",
-                    l[i].Url, l[i].Name, l[i].Players, l[i].PlayersMax));
-            }
-            webBrowser2.DocumentText = html.ToString();
             if (checkBox1.Checked)
             {
                 RememberPassword(textBox2.Text, textBox3.Text);
             }
+            DrawServerList();
+        }
+
+        void SearchServerList(string Cont)
+        {
+            if(Cont == null || Cont.Length < 1) return;
+            StringBuilder html = new StringBuilder();
+            if (items.Count == 0)
+            {
+                return;
+            }
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = new ListViewItem();
+                if (items[i].Name.ToLower().Contains(Cont.ToLower()))
+                {
+                    item.Text = items[i].Name;
+                    item.SubItems.Add(items[i].Players.ToString());
+                    item.SubItems.Add(items[i].PlayersMax.ToString());
+                    html.AppendLine(string.Format("<a href=\"{0}\"><b>{1}</b></a> {2}/{3} <br>",
+                        items[i].Url, items[i].Name, items[i].Players, items[i].PlayersMax));
+                }
+            }
+            if (html.Length < 1)
+            {
+                webBrowser2.DocumentText = "No matches found";
+            }
+            else
+            {
+                webBrowser2.DocumentText = html.ToString();
+            }
+        }
+
+        void DrawServerList()
+        {
+            if (items == null)
+            {
+                items = c.ServerList(textBox2.Text, textBox3.Text);
+            }
+            if (items.Count == 0)
+            {
+                MessageBox.Show("Could not retrieve server list");
+                return;
+            }
+            StringBuilder html = new StringBuilder();
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = new ListViewItem();
+                item.Text = items[i].Name;
+                item.SubItems.Add(items[i].Players.ToString());
+                item.SubItems.Add(items[i].PlayersMax.ToString());
+                html.AppendLine(string.Format("<a href=\"{0}\"><b>{1}</b></a> {2}/{3} <br>",
+                    items[i].Url, items[i].Name, items[i].Players, items[i].PlayersMax));
+            }
+            webBrowser2.DocumentText = html.ToString();
+            SearchBox.Enabled = true;
         }
         void c_Progress(object sender, ProgressEventArgs e)
         {
@@ -184,6 +218,27 @@ namespace ManicDigger
         private static string GetMinecraftPasswordFilePath()
         {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MinecraftPassword.txt");
+        }
+
+        private void SearchBox_TextChanged(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void SearchBox_TextChanged_1(object sender, EventArgs e)
+        {
+            if (c == null) return;
+            if (SearchBox.Text.Length < 1)
+            {
+                DrawServerList();
+                return;
+            }
+            SearchServerList(SearchBox.Text);
+        }
+
+        private void splitContainer2_SplitterMoved(object sender, SplitterEventArgs e)
+        {
+
         }
     }
 }

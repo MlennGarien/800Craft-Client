@@ -692,12 +692,13 @@ namespace ManicDigger
             {
                 GuiTyping = TypingState.Typing;
                 GuiTypingBuffer = "";
+                FreeMouse = true;
                 return;
             }
             if (e.KeyChar == '/' && GuiTyping == TypingState.None)
             {
                 GuiTyping = TypingState.Typing;
-                GuiTypingBuffer = "";
+                GuiTypingBuffer = "/";
                 return;
             }
             if (GuiTyping == TypingState.Typing)
@@ -979,6 +980,7 @@ namespace ManicDigger
                             typinglogpos = typinglog.Count;
                             ClientCommand(GuiTypingBuffer);
                             GuiTypingBuffer = "";
+                            FreeMouse = false;
                         }
                         GuiTyping = TypingState.None;
                     }

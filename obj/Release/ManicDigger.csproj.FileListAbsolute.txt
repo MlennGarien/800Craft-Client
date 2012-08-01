@@ -15,4 +15,3 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.csproj.GenerateResource.Cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.pdb
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.csprojResolveAssemblyReference.cache

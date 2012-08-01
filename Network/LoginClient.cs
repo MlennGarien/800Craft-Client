@@ -4,6 +4,7 @@ using System.Text;
 using System.Net;
 using System.IO;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 
 namespace ManicDigger
 {
@@ -40,33 +41,41 @@ namespace ManicDigger
     public class LoginClientMinecraft : ILoginClient
     {
         public event EventHandler<ProgressEventArgs> Progress;
+        //this section uses a method written by Fragmer from ChargedMinersLauncher
+        ﻿// Part of ChargedMinersLaunher | Copyright (c) 2012 Matvei Stefarov <me@matvei.org> | BSD-3 | See LICENSE.txt
         public List<ServerInfo> ServerList(string username, string password)
         {
             ReportProgress(0);
             List<ServerInfo> l = new List<ServerInfo>();
-            string html = LoginAndReadPage(username, password, "http://minecraft.net/servers.jsp");
-            StringReader sr = new StringReader(html);
-            for (; ; )
+            string url = "http://www.minecraft.net/classic/list";
+            string html = LoginAndReadPage(username, password, url);
+            Regex ServerListEntry = new Regex(@"<a href=""/classic/play/([0-9a-f]+)"">([^<]+)</a>\s+</td>\s+<td>(\d+)</td>\s+<td>(\d+)</td>\s+<td>(\d+\w)</td>");
+            int matchNumber = 0;
+            foreach (Match match in ServerListEntry.Matches(html))
             {
-                string s = sr.ReadLine();
-                if (s == null) { break; }
-                s = s.Trim();
-                string hashprefix = "server=";
-                if (s.Contains(hashprefix))
+                string hash = match.Groups[1].Value;
+                // minecraft.net escaping bug workaround
+                string name = System.Web.HttpUtility.HtmlDecode(match.Groups[2].Value).Replace("&hellip;", "…");
+                int players;
+                if (!Int32.TryParse(match.Groups[3].Value, out players))
                 {
-                    int a = s.IndexOf(hashprefix) + hashprefix.Length;
-                    int b = s.IndexOf("\"", a + 1);
-                    string url = "http://minecraft.net/play.jsp?server=" + s.Substring(a, b - a);
-                    int a2 = s.IndexOf("<b>");
-                    string name = s.Substring(a2 + "<b>".Length, s.IndexOf("</b>") - a2 - "</b>".Length + 1);
-                    int a3 = s.Length - 1;
-                    while (s[a3] != ' ') { a3--; }
-                    string playersnumstr = s.Substring(a3);
-                    string[] playersnumstrs = playersnumstr.Split(new[] { '/' });
-                    int players = int.Parse(playersnumstrs[0]);
-                    int playersmax = int.Parse(playersnumstrs[1]);
-                    l.Add(new ServerInfo() { Url = url, Name = name, Players = players, PlayersMax = playersmax });
+                    continue;
                 }
+                int maxPlayers;
+                if (!Int32.TryParse(match.Groups[4].Value, out maxPlayers))
+                {
+                    continue;
+                }
+
+                //TimeSpan uptime;
+                // if (!TryParseMiniTimespan(match.Groups[5].Value, out uptime))
+                //{
+                // continue;
+                //}
+                //uptime = uptime.Subtract(new TimeSpan(matchNumber)); // to preserve sort order
+
+                l.Add(new ServerInfo() { Url = "http://www.minecraft.net/classic/play/" + hash, Name = name, Players = players, PlayersMax = 25 });
+                matchNumber++;
             }
             ReportProgress(1);
             return l;
@@ -78,14 +87,11 @@ namespace ManicDigger
         //Three Steps
         public LoginData Login(string username, string password, string gameurl)
         {
-            string serveraddress = "74.109.22.242"; //au70
-            string port = "25565";
-            string mppass = "24f8c8e151dc0d8284b6c1f032b9985b"; //old code below
-            /* string html = LoginAndReadPage(username, password, gameurl);
+            string html = LoginAndReadPage(username, password, gameurl);
             string serveraddress = ReadValue(html.Substring(html.IndexOf("\"server\""), 40));
             string port = ReadValue(html.Substring(html.IndexOf("\"port\""), 40));
             string mppass = ReadValue(html.Substring(html.IndexOf("\"mppass\""), 80)); 
-            */
+            
             return new LoginData() { serveraddress = serveraddress, port = int.Parse(port), mppass = mppass };
         }
         private string LoginAndReadPage(string username, string password, string gameurl)
@@ -139,13 +145,14 @@ namespace ManicDigger
         List<string> loggedincookie = new List<string>();
         string username;
         string password;
+        
         void LoginCookie()
         {
             //Step 1.
             //---
-            //Go to http://www.minecraft.net/login.jsp and GET, you will receive JSESSIONID cookie.
+            //Go to http://www.minecraft.net/login and GET, you will receive JSESSIONID cookie.
             //---
-            string loginurl = "http://www.minecraft.net/login.jsp";
+            string loginurl = "http://www.minecraft.net/login";
             string data11 = string.Format("username={0}&password={1}", username, password);
             string sessionidcookie;
             {
@@ -161,18 +168,18 @@ namespace ManicDigger
             ReportProgress(1.0 / 3);
             //Step 2.
             //---
-            //Go to http://www.minecraft.net/login.jsp and POST "username={0}&password={1}" using JSESSIONID cookie.
+            //Go to http://www.minecraft.net/login and POST "username={0}&password={1}" using JSESSIONID cookie.
             //You will receive logged in cookie ("_uid").
             //Because of multipart http page, HttpWebRequest has some trouble receiving cookies in step 2,
             //so it is easier to just use raw TcpClient for this.
             //---
             {
-                using (TcpClient step2Client = new TcpClient("minecraft.net", 80))
+                using (TcpClient step2Client = new TcpClient("www.minecraft.net", 80))
                 {
                     var stream = step2Client.GetStream();
                     StreamWriter sw = new StreamWriter(stream);
 
-                    sw.WriteLine("POST /login.jsp HTTP/1.0");
+                    sw.WriteLine("POST /login HTTP/1.0");
                     sw.WriteLine("Host: www.minecraft.net");
                     sw.WriteLine("Content-Type: application/x-www-form-urlencoded");
                     sw.WriteLine("Set-Cookie: " + sessionidcookie);
@@ -190,6 +197,7 @@ namespace ManicDigger
                         {
                             break;
                         }
+                        //System.Windows.Forms.MessageBox.Show(s);
                         if (s.Contains("Set-Cookie"))
                         {
                             loggedincookie.Add(s);
