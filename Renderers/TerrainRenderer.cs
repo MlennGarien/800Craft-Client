@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using OpenTK;
 using ManicDigger.Collisions;
@@ -110,21 +111,21 @@ namespace ManicDigger
         {
             return l.GetEnumerator().MoveNext();
         }
-        public static T First<T>(IEnumerable<T> l)
-        {
-            var e = l.GetEnumerator();
-            e.MoveNext();
-            return e.Current;
-        }
-        public static int Count<T>(IEnumerable<T> l)
-        {
-            int count = 0;
-            foreach (T v in l)
-            {
-                count++;
-            }
-            return count;
-        }
+        //public static T First<T>(IEnumerable<T> l)
+        //{
+        //    var e = l.GetEnumerator();
+        //    e.MoveNext();
+        //    return e.Current;
+        //}
+        //public static int Count<T>(IEnumerable<T> l)
+        //{
+        //    int count = 0;
+        //    foreach (T v in l)
+        //    {
+        //        count++;
+        //    }
+        //    return count;
+        //}
     }
     public interface ITerrainInfo
     {
@@ -327,8 +328,11 @@ namespace ManicDigger
                 Point playerpoint = new Point((int)(localplayerposition.LocalPlayerPosition.X / chunksize), (int)(localplayerposition.LocalPlayerPosition.Z / chunksize));
                 ProcessAllPriorityTodos();
                 List<TodoItem> l = new List<TodoItem>();
-                FindChunksToDelete(l);
-                FindChunksToAdd(l);
+                lock (terrainlock)
+                {
+                    FindChunksToDelete(l);
+                    FindChunksToAdd(l);
+                }
                 //without local cache, sort could crash when player moves during sort.
                 localplayerpositioncache = localplayerposition.LocalPlayerPosition;
                 l.Sort(FTodo);
@@ -346,9 +350,9 @@ namespace ManicDigger
         }
         private void FindChunksToDelete(List<TodoItem> l)
         {
-            foreach (var k in batchedblocks)
+            foreach (var k in batchedblocks.Values)
             {
-                var v = k.Key;
+                var v = k.V;
                 if ((new Vector3(v.X * chunksize, localplayerposition.LocalPlayerPosition.Y, v.Y * chunksize) - localplayerposition.LocalPlayerPosition).Length > chunkdrawdistance * chunksize)
                 {
                     l.Add(new TodoItem() { position = new Point((int)v.X, (int)v.Y), action = TodoAction.Delete });
@@ -366,9 +370,10 @@ namespace ManicDigger
                     bool add = false;
                     for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
                     {
-                        if (!batchedblocks.ContainsKey(new Vector3(xx, yy, z)))
+                        if (!batchedblocks.ContainsKey(GetV3HashCode(xx, yy, z)))
                         {
                             add = true;
+                            break;
                         }
                     }
                     if (add && (new Vector3(xx * chunksize, localplayerposition.LocalPlayerPosition.Y, yy * chunksize) - localplayerposition.LocalPlayerPosition).Length <= chunkdrawdistance * chunksize
@@ -462,11 +467,11 @@ namespace ManicDigger
                     var p = ti[i];
                     var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
                     var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                    if (chunkk.Count > 0)
+                    if (chunk.Count() > 0)
                     {
-                        nearchunksadd.Add(p, chunkk.ToArray());
+                        nearchunksadd.Add(p, chunk.ToArray());
                     }
-                    if (batchedblocks.ContainsKey(p))
+                    if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
                     {
                         nearchunksremove.Add(p);
                     }
@@ -476,12 +481,12 @@ namespace ManicDigger
                 {
                     foreach (Vector3 p in nearchunksremove)
                     {
-                        if (!batchedblocks.ContainsKey(p))
+                        if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
                         {
                             //crash fix. crash happens on UpdateAllTiles().
                             continue;
                         }
-                        int[] b = batchedblocks[p];
+                        int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
                         if (b != null)
                         {
                             foreach (int id in b)
@@ -489,7 +494,7 @@ namespace ManicDigger
                                 batcher.Remove(id);
                             }
                         }
-                        batchedblocks.Remove(p);
+                        batchedblocks.Remove(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z));
                     }
                     foreach (var k in nearchunksadd)
                     {
@@ -500,7 +505,7 @@ namespace ManicDigger
                         {
                             ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
                         }
-                        batchedblocks[p] = ids.ToArray();
+                        batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)] = new BlockData() { V = p, A = ids.ToArray() };
                     }
                 }
             }
@@ -517,7 +522,7 @@ namespace ManicDigger
                     {
                         //lock (terrainlock)
                         {
-                            if (batchedblocks.ContainsKey(new Vector3(p.X, p.Y, z)))
+                            if (batchedblocks.ContainsKey(GetV3HashCode(p.X, p.Y, z)))
                             {
                                 continue;
                             }
@@ -527,9 +532,9 @@ namespace ManicDigger
                             }
                             processed = true;
                             var chunk = MakeChunk(p.X, p.Y, z);
-                            var chunkk = new List<VerticesIndicesToLoad>(chunk);
+                            //var chunkk = new List<VerticesIndicesToLoad>(chunk);
                             List<int> ids = new List<int>();
-                            foreach (VerticesIndicesToLoad v in chunkk)
+                            foreach (VerticesIndicesToLoad v in chunk)
                             {
                                 if (v.indices.Length != 0)
                                 {
@@ -538,11 +543,11 @@ namespace ManicDigger
                             }
                             if (ids.Count > 0)
                             {
-                                batchedblocks[new Vector3(p.X, p.Y, z)] = ids.ToArray();
+                                batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData() { V = new Vector3(p.X, p.Y, z), A = ids.ToArray() };
                             }
                             else
                             {
-                                batchedblocks[new Vector3(p.X, p.Y, z)] = null;
+                                batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData();
                             }
                         }
                     }
@@ -556,17 +561,17 @@ namespace ManicDigger
                 {
                     //lock (terrainlock)
                     {
-                        if (batchedblocks.ContainsKey(new Vector3(p.X, p.Y, z)))
+                        BlockData bd;
+                        if (batchedblocks.TryGetValue(GetV3HashCode(p.X, p.Y, z), out bd))
                         {
-                            int[] b = batchedblocks[new Vector3(p.X, p.Y, z)];
-                            if (b != null)
+                            if (bd.A != null)
                             {
-                                foreach (int id in b)
+                                foreach (int id in bd.A)
                                 {
                                     batcher.Remove(id);
                                 }
                             }
-                            batchedblocks.Remove(new Vector3(p.X, p.Y, z));
+                            batchedblocks.Remove(GetV3HashCode(p.X, p.Y, z));
                         }
                     }
                 }
@@ -657,7 +662,17 @@ namespace ManicDigger
                 batcher.Draw(localplayerposition.LocalPlayerPosition);
             }
         }
-        Dictionary<Vector3, int[]> batchedblocks = new Dictionary<Vector3, int[]>();
+        private struct BlockData
+        {
+            public Vector3 V;
+            public int[] A;
+        }
+        Dictionary<int, BlockData> batchedblocks = new Dictionary<int, BlockData>();
+        public static int GetV3HashCode(int i, int j, int k)
+        {
+            return (int)(0xE75C6973 * (uint)i + 0xC965737D * (uint)j + 0x7EC976D5 * (uint)k);
+        }
+
         Vector3 lastplayerposition;
         MeshBatcher batcher = new MeshBatcher();
         public void UpdateAllTiles()
@@ -693,7 +708,7 @@ namespace ManicDigger
         {
             for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
             {
-                if (batchedblocks.ContainsKey(new Vector3(x, y, z)))
+                if (batchedblocks.ContainsKey(GetV3HashCode(x, y, z)))
                 {
                     return true;
                 }

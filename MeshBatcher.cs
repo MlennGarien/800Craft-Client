@@ -63,7 +63,7 @@ namespace ManicDigger
             {
                 if (empty.Count > 0)
                 {
-                    id = MyLinq.First(empty.Keys);
+                    id = System.Linq.Enumerable.First(empty.Keys);
                     empty.Remove(id);
                 }
                 else
@@ -100,9 +100,9 @@ namespace ManicDigger
                     GL.NewList(GetList(t.id), ListMode.Compile);
 
                     GL.BindTexture(TextureTarget.Texture2D, t.texture);
-                    GL.EnableClientState(EnableCap.TextureCoordArray);
-                    GL.EnableClientState(EnableCap.VertexArray);
-                    GL.EnableClientState(EnableCap.ColorArray);
+                    GL.EnableClientState(ArrayCap.TextureCoordArray);
+                    GL.EnableClientState(ArrayCap.VertexArray);
+                    GL.EnableClientState(ArrayCap.ColorArray);
                     unsafe
                     {
                         fixed (VertexPositionTexture* p = t.vertices)
@@ -113,9 +113,9 @@ namespace ManicDigger
                             GL.DrawElements(BeginMode.Triangles, t.indices.Length, DrawElementsType.UnsignedShort, t.indices);
                         }
                     }
-                    GL.DisableClientState(EnableCap.TextureCoordArray);
-                    GL.DisableClientState(EnableCap.VertexArray);
-                    GL.DisableClientState(EnableCap.ColorArray);
+                    GL.DisableClientState(ArrayCap.TextureCoordArray);
+                    GL.DisableClientState(ArrayCap.VertexArray);
+                    GL.DisableClientState(ArrayCap.ColorArray);
 
                     /*
                     GL.Begin(BeginMode.Triangles);
