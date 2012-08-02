@@ -74,7 +74,7 @@ namespace ManicDigger
                 //}
                 //uptime = uptime.Subtract(new TimeSpan(matchNumber)); // to preserve sort order
 
-                l.Add(new ServerInfo() { Url = "http://www.minecraft.net/classic/play/" + hash, Name = name, Players = players, PlayersMax = 25 });
+                l.Add(new ServerInfo() { Url = "http://www.minecraft.net/classic/play/" + hash, Name = name, Players = players, PlayersMax = maxPlayers });
                 matchNumber++;
             }
             ReportProgress(1);

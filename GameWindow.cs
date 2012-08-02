@@ -3230,6 +3230,43 @@ namespace ManicDigger
             GL.Enable(EnableCap.DepthTest);
             GL.PopAttrib();
         }
+
+        static void drawCube(Vector3 offset, Color color)
+        {
+            var cubeIndices = new int[] 
+                        { 
+                                // front face
+                                0, 1, 2, 2, 3, 0, 
+                                // top face
+                                3, 2, 6, 6, 7, 3, 
+                                // back face
+                                7, 6, 5, 5, 4, 7, 
+                                // left face
+                                4, 0, 3, 3, 7, 4, 
+                                // bottom face
+                                0, 1, 5, 5, 4, 0,
+                                // right face
+                                1, 5, 6, 6, 2, 1
+                        };
+
+            var cubeVertices = new Vector3[] 
+                        {
+                                offset + new Vector3 (-0.5f, -0.5f, 0.5f),
+                                offset + new Vector3 (0.5f, -0.5f, 0.5f),
+                                offset + new Vector3 (0.5f, 0.5f, 0.5f), 
+                                offset + new Vector3 (-0.5f, 0.5f, 0.5f), 
+                                offset + new Vector3 (-0.5f, -0.5f, -0.5f), 
+                                offset + new Vector3 (0.5f, -0.5f, -0.5f), 
+                                offset + new Vector3 (0.5f, 0.5f, -0.5f), 
+                                offset + new Vector3 (-0.5f, 0.5f, -0.5f) 
+                        };
+
+            GL.Begin(BeginMode.Triangles);
+            GL.Color3(color);
+            foreach (int index in cubeIndices)
+                GL.Vertex3(cubeVertices[index]);
+            GL.End();
+        }
         struct Draw2dData
         {
             public float x1;

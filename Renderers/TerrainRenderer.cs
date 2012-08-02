@@ -467,9 +467,9 @@ namespace ManicDigger
                     var p = ti[i];
                     var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
                     var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                    if (chunk.Count() > 0)
+                    if (chunkk.Count() > 0)
                     {
-                        nearchunksadd.Add(p, chunk.ToArray());
+                        nearchunksadd.Add(p, chunkk.ToArray());
                     }
                     if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
                     {
