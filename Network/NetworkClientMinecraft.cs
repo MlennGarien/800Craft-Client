@@ -435,9 +435,9 @@ namespace ManicDigger
                     break;
                 default:
                     {
-                        string disconnectReason = NetworkHelper.ReadString64(br);
+                        /*string disconnectReason = NetworkHelper.ReadString64(br);
                         ManicDiggerGameWindow.DisconnectMessage = disconnectReason;
-                        ManicDiggerGameWindow.Disconnected = true;
+                        ManicDiggerGameWindow.Disconnected = true;*/
                         break;
                     }
             }

@@ -514,72 +514,72 @@ namespace ManicDigger
         {
             var p = ti.position;
             bool processed = false;
-            if (ti.action == TodoAction.Add)
+            switch (ti.action)
             {
-                for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
-                {
-                    try
+                case TodoAction.Add:
+                    for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
+                    {
+                        try
+                        {
+                            //lock (terrainlock)
+                            {
+                                if (batchedblocks.ContainsKey(GetV3HashCode(p.X, p.Y, z)))
+                                {
+                                    continue;
+                                }
+                                //if (!IsChunksAroundReady(p.X, p.Y, z))
+                                //{
+                                    //continue;
+                                //}
+                                processed = true;
+                                var chunk = MakeChunk(p.X, p.Y, z);
+                                //var chunkk = new List<VerticesIndicesToLoad>(chunk);
+                                List<int> ids = new List<int>();
+                                foreach (VerticesIndicesToLoad v in chunk)
+                                {
+                                    if (v.indices.Length != 0)
+                                    {
+                                        ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture));
+                                    }
+                                }
+                                if (ids.Count > 0)
+                                {
+                                    batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData() { V = new Vector3(p.X, p.Y, z), A = ids.ToArray() };
+                                }
+                                else
+                                {
+                                    batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData();
+                                }
+                            }
+                        }
+                        catch { Console.WriteLine("Chunk error"); }
+                    }
+                    break;
+                case TodoAction.Delete:
+                    processed = true;
+                    for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
                     {
                         //lock (terrainlock)
                         {
-                            if (batchedblocks.ContainsKey(GetV3HashCode(p.X, p.Y, z)))
+                            BlockData bd;
+                            if (batchedblocks.TryGetValue(GetV3HashCode(p.X, p.Y, z), out bd))
                             {
-                                continue;
-                            }
-                            if (!IsChunksAroundReady(p.X, p.Y, z))
-                            {
-                                continue;
-                            }
-                            processed = true;
-                            var chunk = MakeChunk(p.X, p.Y, z);
-                            //var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                            List<int> ids = new List<int>();
-                            foreach (VerticesIndicesToLoad v in chunk)
-                            {
-                                if (v.indices.Length != 0)
+                                if (bd.A != null)
                                 {
-                                    ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture));
+                                    foreach (int id in bd.A)
+                                    {
+                                        batcher.Remove(id);
+                                    }
                                 }
-                            }
-                            if (ids.Count > 0)
-                            {
-                                batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData() { V = new Vector3(p.X, p.Y, z), A = ids.ToArray() };
-                            }
-                            else
-                            {
-                                batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData();
+                                batchedblocks.Remove(GetV3HashCode(p.X, p.Y, z));
                             }
                         }
                     }
-                    catch { Console.WriteLine("Chunk error"); }
-                }
-            }
-            else if (ti.action == TodoAction.Delete)
-            {
-                processed = true;
-                for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
-                {
-                    //lock (terrainlock)
-                    {
-                        BlockData bd;
-                        if (batchedblocks.TryGetValue(GetV3HashCode(p.X, p.Y, z), out bd))
-                        {
-                            if (bd.A != null)
-                            {
-                                foreach (int id in bd.A)
-                                {
-                                    batcher.Remove(id);
-                                }
-                            }
-                            batchedblocks.Remove(GetV3HashCode(p.X, p.Y, z));
-                        }
-                    }
-                }
-            }
-            else
-            {
-                processed = true;
-                UpdateAllTiles();
+                    break;
+                default:
+                    processed = true;
+                    UpdateAllTiles();
+                    break;
             }
             return processed;
         }
@@ -653,7 +653,6 @@ namespace ManicDigger
         object terrainlock = new object();
         public void Draw()
         {
-            //GL.Color3(terraincolor);
             worldfeatures.DrawWorldFeatures();
             lock (terrainlock)
             {
@@ -738,6 +737,7 @@ namespace ManicDigger
                     }
                 }
                 prioritytodo.Add(l.ToArray());
+                l.Clear();
             }
         }
         public int TrianglesCount()

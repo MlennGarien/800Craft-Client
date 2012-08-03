@@ -315,7 +315,7 @@ namespace ManicDigger
             }
             else
             {
-                //GL.GenerateMipmap(GenerateMipmapTarget.Texture2D); //DOES NOT WORK ON ATI GRAPHIC CARDS
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D); //DOES NOT WORK ON ATI GRAPHIC CARDS
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 1); //DOES NOT WORK ON ???
                 int[] MipMapCount = new int[1];
                 GL.GetTexParameter(TextureTarget.Texture2D, GetTextureParameter.TextureMaxLevel, out MipMapCount[0]);
@@ -591,7 +591,7 @@ namespace ManicDigger
         const bool ENABLE_FULLSCREEN = false;
         public ManicDiggerGameWindow()
             : base(800, 600, new GraphicsMode(32, 24, 16, 32), "",
-                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { }
+                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Off;}
         The3d the3d = new The3d();
         public int LoadTexture(string filename)
         {
@@ -612,7 +612,9 @@ namespace ManicDigger
             else if (guistate == GuiState.Inventory)
             { }
             else if (guistate == GuiState.MapLoading)
-            { }
+            {
+                DrawMapLoading();
+            }
             else if (guistate == GuiState.CraftingRecipes)
             { }
             else { throw new Exception(); }
@@ -809,6 +811,23 @@ namespace ManicDigger
                     {
                         ENABLE_DRAWFPS = BoolCommandArgument(arguments) || arguments.Trim() == "2";
                         ENABLE_DRAWFPSHISTORY = arguments.Trim() == "2";
+                    }
+                    else if (cmd == ".test")
+                    {
+                        try
+                        {
+                            for (int x = 1; x < 100; x++)
+                            {
+                                for (int y = 1; y < 100; y++)
+                                {
+                                    for (int z = 1; z < 50; z++)
+                                    {
+                                        SetTileAndUpdate(new Vector3(x, y, z), 5);
+                                    }
+                                }
+                            }
+                        }
+                        catch(Exception e) { Console.WriteLine("Cannot update tile! : " + e.Message); }
                     }
                     else if (cmd == "savefeature")
                     {
@@ -1220,6 +1239,7 @@ namespace ManicDigger
             }
             else if (guistate == GuiState.MapLoading)
             {
+                DrawMapLoading();
             }
             else if (guistate == GuiState.CraftingRecipes)
             {
@@ -1668,6 +1688,7 @@ namespace ManicDigger
             else if (guistate == GuiState.MapLoading)
             {
                 //todo back to game when escape key pressed.
+                DrawMapLoading();
             }
             else if (guistate == GuiState.CraftingRecipes)
             {
@@ -2137,7 +2158,6 @@ namespace ManicDigger
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
-
             float density = 0.3f;
             float[] fogColor = new[] { 1f, 1f, 1f, 1.0f };
             if (terrain.DrawDistance < 256)
@@ -3183,7 +3203,7 @@ namespace ManicDigger
             GL.Enable(EnableCap.AlphaTest);
             DeleteUnusedCachedTextures();
         }
-        bool ENABLE_DRAWFPS = false;
+        bool ENABLE_DRAWFPS = true;
         bool ENABLE_DRAWFPSHISTORY = false;
         void Draw2dBitmapFile(string filename, float x1, float y1, float width, float height)
         {
@@ -3229,43 +3249,6 @@ namespace ManicDigger
             GL.End();
             GL.Enable(EnableCap.DepthTest);
             GL.PopAttrib();
-        }
-
-        static void drawCube(Vector3 offset, Color color)
-        {
-            var cubeIndices = new int[] 
-                        { 
-                                // front face
-                                0, 1, 2, 2, 3, 0, 
-                                // top face
-                                3, 2, 6, 6, 7, 3, 
-                                // back face
-                                7, 6, 5, 5, 4, 7, 
-                                // left face
-                                4, 0, 3, 3, 7, 4, 
-                                // bottom face
-                                0, 1, 5, 5, 4, 0,
-                                // right face
-                                1, 5, 6, 6, 2, 1
-                        };
-
-            var cubeVertices = new Vector3[] 
-                        {
-                                offset + new Vector3 (-0.5f, -0.5f, 0.5f),
-                                offset + new Vector3 (0.5f, -0.5f, 0.5f),
-                                offset + new Vector3 (0.5f, 0.5f, 0.5f), 
-                                offset + new Vector3 (-0.5f, 0.5f, 0.5f), 
-                                offset + new Vector3 (-0.5f, -0.5f, -0.5f), 
-                                offset + new Vector3 (0.5f, -0.5f, -0.5f), 
-                                offset + new Vector3 (0.5f, 0.5f, -0.5f), 
-                                offset + new Vector3 (-0.5f, 0.5f, -0.5f) 
-                        };
-
-            GL.Begin(BeginMode.Triangles);
-            GL.Color3(color);
-            foreach (int index in cubeIndices)
-                GL.Vertex3(cubeVertices[index]);
-            GL.End();
         }
         struct Draw2dData
         {

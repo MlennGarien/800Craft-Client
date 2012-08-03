@@ -217,63 +217,20 @@ namespace ManicDigger
                 drawbottom = false;
                 flowerfix = 0.5f;
             }
-            RailDirectionFlags rail = data.GetRail(tiletype);
+           
             float blockheight = 1;//= data.GetTerrainBlockHeight(tiletype);
-            if (rail != RailDirectionFlags.None)
-            {
-                blockheight = 0.3f;
-                /*
-                RailPolygons(myelements, myvertices, x, y, z, rail);
-                return;
-                */
-            }
+            
             if (tt == data.TileIdSingleStairs)
             {
                 blockheight = 0.5f;
             }
-            if (tt == data.TileIdTorch)
-            {
-                TorchType type = TorchType.Normal;
-                if (CanSupportTorch(currentChunk[xx - 1, yy, zz])) { type = TorchType.Front; }
-                if (CanSupportTorch(currentChunk[xx + 1, yy, zz])) { type = TorchType.Back; }
-                if (CanSupportTorch(currentChunk[xx, yy - 1, zz])) { type = TorchType.Left; }
-                if (CanSupportTorch(currentChunk[xx, yy + 1, zz])) { type = TorchType.Right; }
-                blockdrawertorch.AddTorch(toreturnmain.indices, toreturnmain.vertices, x, y, z, type);
-                return;
-            }
+            
             //slope
             float blockheight00 = blockheight;
             float blockheight01 = blockheight;
             float blockheight10 = blockheight;
             float blockheight11 = blockheight;
-            if (rail != RailDirectionFlags.None)
-            {
-                if (railmaputil == null)
-                {
-                    railmaputil = new RailMapUtil() { data = data, mapstorage = mapstorage };
-                }
-                RailSlope slope = railmaputil.GetRailSlope(x, y, z);
-                if (slope == RailSlope.TwoRightRaised)
-                {
-                    blockheight10 += 1;
-                    blockheight11 += 1;
-                }
-                if (slope == RailSlope.TwoLeftRaised)
-                {
-                    blockheight00 += 1;
-                    blockheight01 += 1;
-                }
-                if (slope == RailSlope.TwoUpRaised)
-                {
-                    blockheight00 += 1;
-                    blockheight10 += 1;
-                }
-                if (slope == RailSlope.TwoDownRaised)
-                {
-                    blockheight01 += 1;
-                    blockheight11 += 1;
-                }
-            }
+            
             Color curcolor = color;
             //top
             if (drawtop)
@@ -545,11 +502,6 @@ namespace ManicDigger
                 }
             }
             return currentChunkShadows[xx, yy, zz];
-        }
-        private bool CanSupportTorch(byte blocktype)
-        {
-            return blocktype != data.TileIdEmpty
-                && blocktype != data.TileIdTorch;
         }
     }
 }

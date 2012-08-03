@@ -103,21 +103,7 @@ namespace ManicDigger
                     GL.EnableClientState(ArrayCap.TextureCoordArray);
                     GL.EnableClientState(ArrayCap.VertexArray);
                     GL.EnableClientState(ArrayCap.ColorArray);
-                    unsafe
-                    {
-                        fixed (VertexPositionTexture* p = t.vertices)
-                        {
-                            GL.VertexPointer(3, VertexPointerType.Float, StrideOfVertices, (IntPtr)(0 + (byte*)p));
-                            GL.TexCoordPointer(2, TexCoordPointerType.Float, StrideOfVertices, (IntPtr)(12 + (byte*)p));
-                            GL.ColorPointer(4, ColorPointerType.UnsignedByte, StrideOfVertices, (IntPtr)(20 + (byte*)p));
-                            GL.DrawElements(BeginMode.Triangles, t.indices.Length, DrawElementsType.UnsignedShort, t.indices);
-                        }
-                    }
-                    GL.DisableClientState(ArrayCap.TextureCoordArray);
-                    GL.DisableClientState(ArrayCap.VertexArray);
-                    GL.DisableClientState(ArrayCap.ColorArray);
-
-                    /*
+                    
                     GL.Begin(BeginMode.Triangles);
                     for (int ii = 0; ii < t.indices.Length; ii++)
                     {
@@ -126,7 +112,6 @@ namespace ManicDigger
                         GL.Vertex3(v.Position.X, v.Position.Y, v.Position.Z);
                     }
                     GL.End();
-                    */
                     GL.EndList();
                     GetListInfo(t.id).indicescount = t.indices.Length;
                     GetListInfo(t.id).center = t.vertices[0].Position;//todo
@@ -170,15 +155,14 @@ namespace ManicDigger
             GL.CallLists(tocallpos, ListNameType.Int, tocall);
             GL.Enable(EnableCap.CullFace);
             //depth sorting. is it needed?
-            /*
-            List<int> alldrawlists = new List<int>();
+            
+            /*List<int> alldrawlists = new List<int>();
             for (int i = 0; i < count; i++)
             {
                 alldrawlists.Add(i);
             }
-            alldrawlists.Sort(f);
-            GL.CallLists(count, ListNameType.Int, alldrawlists.ToArray());
-            */
+            GL.CallLists(count, ListNameType.Int, alldrawlists.ToArray());*/
+            
         }
         public int MAX_DISPLAY_LISTS = 32 * 1024;
         int[] tocall;
