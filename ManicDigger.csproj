@@ -78,6 +78,7 @@
     <Compile Include="ConsoleForm.Designer.cs">
       <DependentUpon>ConsoleForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="IterableSet.cs" />
     <Compile Include="Network\LoginClient.cs" />
     <Compile Include="MeshBatcher.cs" />
     <Compile Include="Renderers\Model3d.cs" />

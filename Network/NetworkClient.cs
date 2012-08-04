@@ -17,7 +17,6 @@ namespace ManicDigger
         void SendSetBlock(Vector3 position, BlockSetMode mode, int type);
         event EventHandler<MapLoadingProgressEventArgs> MapLoadingProgress;
         event EventHandler<MapLoadedEventArgs> MapLoaded;
-        event EventHandler<SessionStatusEventArgs> SessionStatus;
         void SendChat(string s);
         IEnumerable<string> ConnectedPlayers();
         void SendPosition(Vector3 position, Vector3 orientation);
@@ -31,16 +30,11 @@ namespace ManicDigger
         public int ProgressBytes { get; set; }
     }
 
-    public class SessionStatusEventArgs : EventArgs
-    {
-        public bool Disconnected = false;
-    }
     public class NetworkClientDummy : INetworkClient
     {
         [Inject]
         public ILocalPlayerPosition player { get; set; }
         public event EventHandler<MapLoadedEventArgs> MapLoaded;
-        public event EventHandler<SessionStatusEventArgs> SessionStatus;
         [Inject]
         public IGui Gui { get; set; }
         [Inject]

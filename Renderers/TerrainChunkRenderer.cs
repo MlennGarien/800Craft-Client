@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using OpenTK;
-using System.Drawing;
 using ManicDigger.Collisions;
+using System.Drawing;
 
 namespace ManicDigger
 {
@@ -194,8 +194,8 @@ namespace ManicDigger
             {
                 return;
             }
-            Color color = mapstorage.GetTerrainBlockColor(x, y, z);
-            Color colorShadowSide = Color.FromArgb(color.A,
+            FastColor color = mapstorage.GetTerrainBlockColor(x, y, z);
+            FastColor colorShadowSide = new FastColor(color.A,
                 (int)(color.R * BlockShadow),
                 (int)(color.G * BlockShadow),
                 (int)(color.B * BlockShadow));
@@ -231,7 +231,7 @@ namespace ManicDigger
             float blockheight10 = blockheight;
             float blockheight11 = blockheight;
             
-            Color curcolor = color;
+            FastColor curcolor = color;
             //top
             if (drawtop)
             {
@@ -239,7 +239,7 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy, zz + 1, x, y, z + 1);
                 if (shadowratio != 1)
                 {
-                    curcolor = Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
                         (int)(color.B * shadowratio));
@@ -267,7 +267,7 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy, zz - 1, x, y, z - 1);
                 if (shadowratio != 1)
                 {
-                    curcolor = Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
                         (int)(Math.Min(curcolor.B, color.B * shadowratio)));
@@ -295,7 +295,7 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx - 1, yy, zz, x - 1, y, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
                         (int)(color.B * shadowratio));
@@ -323,7 +323,7 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx + 1, yy, zz, x + 1, y, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
                         (int)(color.B * shadowratio));
@@ -350,7 +350,7 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy - 1, zz, x, y - 1, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
                         (int)(Math.Min(curcolor.B, color.B * shadowratio)));
@@ -379,7 +379,7 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy + 1, zz, x, y + 1, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
                         (int)(Math.Min(curcolor.B, color.B * shadowratio)));

@@ -178,7 +178,7 @@ namespace ManicDigger
             v = v >> 20;
             uint x = (uint)(v & pow20minus1);
             return new Vector3i((int)x, (int)y, (int)z);
-        }
+        } 
         public static ulong ToMapPos(int x, int y, int z)
         {
             ulong v = 0;

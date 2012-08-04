@@ -583,7 +583,6 @@ namespace ManicDigger
         }
         #region IClientNetwork Members
         public event EventHandler<MapLoadingProgressEventArgs> MapLoadingProgress;
-        public event EventHandler<SessionStatusEventArgs> SessionStatus;
         #endregion
         Dictionary<int, bool> enablePlayerUpdatePosition = new Dictionary<int, bool>();
         #region INetworkClient Members

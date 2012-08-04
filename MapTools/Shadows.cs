@@ -74,8 +74,6 @@ namespace ManicDigger
         public ILocalPlayerPosition localplayerposition { get; set; }
         [Inject]
         public Config3d config3d { get; set; }
-        [Inject]
-        public IIsChunkReady ischunkready { get; set; }
 
         const int chunksize = 16;
         Queue<Vector3i> shadowstoupdate = new Queue<Vector3i>();
@@ -244,7 +242,6 @@ namespace ManicDigger
             if (oldheight >= map.MapSizeZ) { oldheight = map.MapSizeZ - 1; }
             UpdateLightHeightmapAt(x, y);
             int newheight = GetLightHeight(x, y);
-            if (newheight < 0) { newheight = 0; } //fixes crash
             if (newheight < oldheight)
             {
                 //make white
@@ -408,12 +405,7 @@ namespace ManicDigger
                 }
                 foreach (var n in BlocksNear(v.x, v.y, v.z))
                 {
-                    if (!MapUtil.IsValidPos(map, n.x, n.y, n.z)
-                        //Bad fix, breaks flooding of torches.
-                        //Fixes flooding into not yet ready (hence empty) chunks, which would cause
-                        //UpdateStartSunlight() to mark a whole column of chunks as fully-lighted.
-                        //                || !ischunkready.IsChunkReady(n.x, n.y, n.z))
-                        )
+                    if (!MapUtil.IsValidPos(map, n.x, n.y, n.z))
                     {
                         continue;
                     }

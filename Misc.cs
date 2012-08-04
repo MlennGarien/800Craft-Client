@@ -9,6 +9,38 @@ using OpenTK;
 
 namespace ManicDigger
 {
+    public struct FastColor
+    {
+        public FastColor(byte A, byte R, byte G, byte B)
+        {
+            this.A = A;
+            this.R = R;
+            this.G = G;
+            this.B = B;
+        }
+        public FastColor(int A, int R, int G, int B)
+        {
+            this.A = (byte)A;
+            this.R = (byte)R;
+            this.G = (byte)G;
+            this.B = (byte)B;
+        }
+        public FastColor(Color c)
+        {
+            this.A = c.A;
+            this.R = c.R;
+            this.G = c.G;
+            this.B = c.B;
+        }
+        public byte A;
+        public byte R;
+        public byte G;
+        public byte B;
+        public Color ToColor()
+        {
+            return Color.FromArgb(A, R, G, B);
+        }
+    }
     public static class VectorTool
     {
         public static Vector3 toVectorInFixedSystem1(float dx, float dy, float dz, double orientationx, double orientationy)

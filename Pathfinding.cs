@@ -280,8 +280,6 @@ namespace ManicDigger.FastAStar
             HighResolutionTime.Start();
 
             bool found = false;
-            bool stop = false;
-            bool stopped = false;
             closed_node_counter = 0;
             open_node_value += 2;
             closed_node_value += 2;
@@ -313,7 +311,6 @@ namespace ManicDigger.FastAStar
                 }
                 if (closed_node_counter > search_limit)
                 {
-                    stopped = true;
                     completed_time = HighResolutionTime.GetTime();
                     return null;
                 }
@@ -475,10 +472,8 @@ namespace ManicDigger.FastAStar
                         PathFinderDebug(fNode.PX, fNode.PY, fNode.X, fNode.Y, PathFinderNodeType.Path, fNode.F, fNode.G);
 #endif
 
-                stopped = true;
                 return closed;
             }
-            stopped = true;
             return null;
         }
     }

@@ -92,6 +92,7 @@ namespace ManicDigger
             lock (toadd)
             {
                 addcounter += addperframe;
+
                 while (//addcounter >= 1 &&
                     toadd.Count > 0)
                 {
@@ -164,6 +165,7 @@ namespace ManicDigger
             GL.CallLists(count, ListNameType.Int, alldrawlists.ToArray());*/
             
         }
+
         public int MAX_DISPLAY_LISTS = 32 * 1024;
         int[] tocall;
         int strideofvertices = -1;

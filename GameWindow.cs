@@ -38,7 +38,7 @@ namespace ManicDigger
             b = byte.MaxValue;
             a = byte.MaxValue;
         }
-        public VertexPositionTexture(float x, float y, float z, float u, float v, Color c)
+        public VertexPositionTexture(float x, float y, float z, float u, float v, FastColor c)
         {
             Position = new Vector3(x, y, z);
             this.u = u;
@@ -60,6 +60,9 @@ namespace ManicDigger
         public Vector3 position;
         public bool transparent;
         public int texture;
+        public float radius;
+        public Vector3 center;
+        public bool wasrendered = true;
     }
     public class Config3d
     {
@@ -584,14 +587,14 @@ namespace ManicDigger
             int x = (int)pos.X;
             int y = (int)pos.Y;
             int z = (int)pos.Z;
-            map.SetBlock(x, y, z, type);
+           map.SetBlock(x, y, z, type);
             terrain.UpdateTile(x, y, z);
             //          });
         }
         const bool ENABLE_FULLSCREEN = false;
         public ManicDiggerGameWindow()
-            : base(800, 600, new GraphicsMode(32, 24, 16, 32), "",
-                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Off;}
+            : base(800, 600, GraphicsMode.Default, "",
+                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Adaptive;}
         The3d the3d = new The3d();
         public int LoadTexture(string filename)
         {
@@ -639,7 +642,7 @@ namespace ManicDigger
             {
                 TargetRenderFrequency = 0;
             }
-            GL.ClearColor(System.Drawing.Color.MidnightBlue);
+            GL.ClearColor(Color.Black);
             //GL.Frustum(double.MinValue, double.MaxValue, double.MinValue, double.MaxValue, 1, 1000);
             //clientgame.GeneratePlainMap();
             //clientgame.LoadMapMinecraft();
@@ -1141,13 +1144,20 @@ namespace ManicDigger
                 }
                 if (e.Key == OpenTK.Input.Key.F)
                 {
-                    if (terrain.DrawDistance == 64) { terrain.DrawDistance = 128; }
-                    else if (terrain.DrawDistance == 128) { terrain.DrawDistance = 256; }
-                    else if (terrain.DrawDistance == 256) { terrain.DrawDistance = 512; }
-                    else if (terrain.DrawDistance == 512) { terrain.DrawDistance = 64; }
-                    else { terrain.DrawDistance = 64; }
-                    Log("Fog distance: " + terrain.DrawDistance);
-                }
+                    int[] drawDistances = { 32, 64, 128, 256, 512 };
+                    for (int i = 0; i < drawDistances.Length; i++)
+                    {
+                        if (terrain.DrawDistance == drawDistances[i])
+                        {
+                            terrain.DrawDistance = drawDistances[(i + 1) % drawDistances.Length];
+                            goto done;
+                        }
+                    }
+                    terrain.DrawDistance = drawDistances[0];
+                done:
+                     Log("Fog distance: " + terrain.DrawDistance);
+                    OnResize(new EventArgs());
+                 }
                 if (e.Key == OpenTK.Input.Key.B)
                 {
                     //EscapeMenuWasFreemove = ENABLE_FREEMOVE;
@@ -1439,7 +1449,7 @@ namespace ManicDigger
         public Dictionary<int, int> FiniteInventory { get { return finiteinventory; } set { finiteinventory = value; } }
         public bool enable_finiteinventory = false;
         public bool ENABLE_FINITEINVENTORY { get { return enable_finiteinventory; } set { enable_finiteinventory = value; } }
-        bool ENABLE_ZFAR = false;
+        bool ENABLE_ZFAR = true;
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
@@ -1449,6 +1459,10 @@ namespace ManicDigger
         }
         public float fov = MathHelper.PiOver3;
         private void Set3dProjection()
+         {
+           Set3dProjection(zfar);
+        }
+        private void Set3dProjection(float zfar)
         {
             float aspect_ratio = Width / (float)Height;
             Matrix4 perpective = Matrix4.CreatePerspectiveFieldOfView(fov, aspect_ratio, znear, zfar);
@@ -1457,7 +1471,7 @@ namespace ManicDigger
             GL.LoadMatrix(ref perpective);
         }
         float znear = 0.1f;
-        float zfar { get { return ENABLE_ZFAR ? config3d.viewdistance * 3f / 4 : 99999; } }
+        float zfar { get { return ENABLE_ZFAR ? terrain.DrawDistance : 99999; } }
         Vector3 up = new Vector3(0f, 1f, 0f);
         Point mouse_current, mouse_previous;
         Point mouse_delta;
@@ -2155,21 +2169,14 @@ namespace ManicDigger
         double t = 0;
         //Vector3 oldplayerposition;
         public float CharacterHeight { get { return CharacterPhysics.characterheight; } set { CharacterPhysics.characterheight = value; } }
+        public Color clearcolor = Color.FromArgb(171, 202, 228);
         protected override void OnRenderFrame(FrameEventArgs e)
         {
+            GL.ClearColor(guistate == GuiState.MapLoading ? Color.Black : clearcolor);
             base.OnRenderFrame(e);
-            float density = 0.3f;
-            float[] fogColor = new[] { 1f, 1f, 1f, 1.0f };
             if (terrain.DrawDistance < 256)
             {
-                GL.Enable(EnableCap.Fog);
-                GL.Hint(HintTarget.FogHint, HintMode.Nicest);
-                GL.Fog(FogParameter.FogMode, (int)FogMode.Linear);
-                GL.Fog(FogParameter.FogColor, fogColor);
-                GL.Fog(FogParameter.FogDensity, density);
-                float fogstart = terrain.DrawDistance - 40;
-                GL.Fog(FogParameter.FogStart, fogstart);
-                GL.Fog(FogParameter.FogEnd, fogstart + 20);
+                SetFog();
             }
             else
             {
@@ -2262,6 +2269,25 @@ namespace ManicDigger
             //OnResize(new EventArgs());
             SwapBuffers();
         }
+         private void SetFog()
+        {
+            float density = 0.3f;
+            //float[] fogColor = new[] { 1f, 1f, 1f, 1.0f };
+            float[] fogColor = new[] { (float)clearcolor.R / 256, (float)clearcolor.G / 256, (float)clearcolor.B / 256, (float)clearcolor.A / 256 };
+            GL.Enable(EnableCap.Fog);
+            GL.Hint(HintTarget.FogHint, HintMode.Nicest);
+            GL.Fog(FogParameter.FogMode, (int)FogMode.Linear);
+            GL.Fog(FogParameter.FogColor, fogColor);
+            GL.Fog(FogParameter.FogDensity, density);
+            float fogsize = 10;
+            if (terrain.DrawDistance <= 64)
+            {
+                fogsize = 5;
+            }
+            float fogstart = terrain.DrawDistance - fogsize;
+            GL.Fog(FogParameter.FogStart, fogstart);
+            GL.Fog(FogParameter.FogEnd, fogstart + fogsize);
+        }
         bool ENABLE_DRAW2D = true;
         int screenshotflash;
         int playertexturedefault = -1;
@@ -2305,6 +2331,8 @@ namespace ManicDigger
             SkySphere skysphere = new SkySphere();
             ushort[] elements = skysphere.CalculateElements(1000, 1000, 20, 20);
             SkySphere.VertexP3N3T2[] vertices = skysphere.CalculateVertices(1000, 1000, 20, 20);
+            Set3dProjection(1000 * 2);
+            GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
             GL.Translate(LocalPlayerPosition);
             GL.Color3(Color.White);
@@ -2318,6 +2346,7 @@ namespace ManicDigger
             }
             GL.End();
             GL.PopMatrix();
+            Set3dProjection();
             return;
         }
         NetworkInterpolation interpolation = new NetworkInterpolation();
@@ -2807,7 +2836,7 @@ namespace ManicDigger
             {
                 float time = fpshistory[i];
                 time = (time * 60) * historyheight;
-                Color c = InterpolateColor((float)i / fpshistory.Count, colors);
+                FastColor c = new FastColor(InterpolateColor((float)i / fpshistory.Count, colors));
                 todraw.Add(new Draw2dData() { x1 = posx + i, y1 = posy - time, width = 1, height = time, inAtlasId = null, color = c });
             }
             Draw2dTextures(todraw, WhiteTexture());
@@ -3257,7 +3286,7 @@ namespace ManicDigger
             public float width;
             public float height;
             public int? inAtlasId;
-            public Color color;
+            public FastColor color;
         }
         void Draw2dTextures(List<Draw2dData> todraw, int textureid)
         {
@@ -3280,7 +3309,7 @@ namespace ManicDigger
                 {
                     rect = TextureAtlas.TextureCoords2d(v.inAtlasId.Value, terrain.texturesPacked);
                 }
-                GL.Color3(v.color);
+                GL.Color3(v.color.ToColor());
                 float x2 = v.x1 + v.width;
                 float y2 = v.y1 + v.height;
                 vertices[i] = new VertexPositionTexture(x2, y2, 0, rect.Right, rect.Bottom, v.color);
