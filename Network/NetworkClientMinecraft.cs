@@ -116,7 +116,7 @@ namespace ManicDigger
                 }
                 if (recv == 0)
                 {
-                    InvokeServerStatus();
+                    //
                     return;
                 }
                 for (int i = 0; i < recv; i++)
