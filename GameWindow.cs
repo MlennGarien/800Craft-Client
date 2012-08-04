@@ -2304,16 +2304,23 @@ namespace ManicDigger
             {
                 players.Add(k.Value.Name);
             }
-            playerskindownloader.Update(players.ToArray(), playertextures, playertexturedefault);
-            string playername;
-                playername = clients.Players[playerid].Name;
-            if (playername == null)
+            try
             {
-                playername = "";
+                playerskindownloader.Update(players.ToArray(), playertextures, playertexturedefault);
+                string playername = clients.Players[playerid].Name;
+                if (playername == null)
+                {
+                    playername = "";
+                }
+                if (playertextures.ContainsKey(playername))
+                {
+                    return playertextures[playername];
+                }
             }
-            if (playertextures.ContainsKey(playername))
+            catch
             {
-                return playertextures[playername];
+                playertexturedefault = LoadTexture(getfile.GetFile(playertexturedefaultfilename));
+                return playertexturedefault;
             }
             return playertexturedefault;
         }
@@ -2346,7 +2353,6 @@ namespace ManicDigger
             }
             GL.End();
             GL.PopMatrix();
-            Set3dProjection();
             return;
         }
         NetworkInterpolation interpolation = new NetworkInterpolation();

@@ -342,7 +342,7 @@ namespace ManicDigger
                     var ti = l[i];
                     if (exit.exit || exit2) { break; }
                     CheckRespawn();
-                    //ProcessAllPriorityTodos();
+                    ProcessAllPriorityTodos();
                     if (!ProcessUpdaterTodo(ti)) { max++; }
                 }
             }
