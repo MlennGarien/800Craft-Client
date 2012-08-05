@@ -150,6 +150,7 @@ namespace ManicDigger.Collisions
         Back,
         Left,
         Right,
+        None
     }
     public struct BlockPosSide
     {

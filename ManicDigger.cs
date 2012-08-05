@@ -112,6 +112,7 @@ namespace ManicDigger
         float WaterLevel { get; set; }
         void Dispose();
         void UseMap(byte[, ,] map);
+        void MapBlock(int a, int b, int c, byte type);
         void SetChunk(int x, int y, int z, byte[, ,] chunk);
     }
     public class Player
@@ -244,6 +245,10 @@ namespace ManicDigger
         public void UseMap(byte[, ,] map)
         {
             this.map = map;
+        }
+        public void MapBlock(int a, int b, int c, byte type)
+        {
+            this.map[a, b, c] = type;
         }
         #endregion
         #region IMapStorage Members

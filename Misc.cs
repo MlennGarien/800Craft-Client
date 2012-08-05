@@ -41,6 +41,33 @@ namespace ManicDigger
             return Color.FromArgb(A, R, G, B);
         }
     }
+    class FastStack<T>
+    {
+        public void Initialize(int maxCount)
+        {
+            values = new T[maxCount];
+        }
+        T[] values;
+        public int Count;
+        public void Push(T value)
+        {
+            if (Count >= values.Length)
+            {
+                Array.Resize(ref values, values.Length * 2);
+            }
+            values[Count] = value;
+            Count++;
+        }
+        public T Pop()
+        {
+            Count--;
+            return values[Count];
+        }
+        public void Clear()
+        {
+            Count = 0;
+        }
+    }
     public static class VectorTool
     {
         public static Vector3 toVectorInFixedSystem1(float dx, float dy, float dz, double orientationx, double orientationy)

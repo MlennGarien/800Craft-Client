@@ -20,3 +20,4 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\ManicD
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.csproj.GenerateResource.Cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\OpenTK.xml

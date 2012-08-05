@@ -26,6 +26,7 @@ namespace ManicDigger
         public float BlockShadow = 0.6f;
         public bool ENABLE_ATLAS1D = true;
         int maxblocktypes = 256;
+        byte[, ,] currentChunkDraw;
         public IEnumerable<VerticesIndicesToLoad> MakeChunk(int x, int y, int z)
         {
             if (x < 0 || y < 0 || z < 0) { yield break; }
@@ -65,6 +66,7 @@ namespace ManicDigger
                     }
                 }
             }
+
             currentChunkShadows = new float[chunksize + 2, chunksize + 2, chunksize + 2];
             currentChunkIgnore = new bool[chunksize, chunksize, chunksize, 6];
             for (int xx = 0; xx < chunksize + 2; xx++)
@@ -77,20 +79,10 @@ namespace ManicDigger
                     }
                 }
             }
+            currentChunkDraw = currentChunk;
+            CalculateBlockPolygons(x, y, z);
 
-            for (int xx = 0; xx < chunksize; xx++)
-            {
-                for (int yy = 0; yy < chunksize; yy++)
-                {
-                    for (int zz = 0; zz < chunksize; zz++)
-                    {
-                        int xxx = x * chunksize + xx;
-                        int yyy = y * chunksize + yy;
-                        int zzz = z * chunksize + zz;
-                        BlockPolygons(xxx, yyy, zzz, currentChunk);
-                    }
-                }
-            }
+            //BlockPolygons(xxx, yyy, zzz, currentChunk);
             if (ENABLE_ATLAS1D)
             {
                 for (int i = 0; i < toreturnatlas1d.Length; i++)
@@ -147,6 +139,26 @@ namespace ManicDigger
                         transparent = true,
                         texture = terrainrenderer.terrainTexture,
                     };
+                }
+            }
+        }
+        private void CalculateBlockPolygons(int x, int y, int z)
+        {
+            for (int xx = 0; xx < chunksize; xx++)
+            {
+                for (int yy = 0; yy < chunksize; yy++)
+                {
+                    for (int zz = 0; zz < chunksize; zz++)
+                    {
+                        int xxx = x * chunksize + xx;
+                        int yyy = y * chunksize + yy;
+                        int zzz = z * chunksize + zz;
+                        //Most blocks aren't rendered at all, quickly reject them.
+                        if (currentChunkDraw[xx, yy, zz] > 1 || currentChunkDraw[xx,yy,zz] < 50)
+                        {
+                            BlockPolygons(xxx, yyy, zzz, currentChunkDraw);
+                        }
+                    }
                 }
             }
         }

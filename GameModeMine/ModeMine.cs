@@ -134,6 +134,12 @@ namespace ManicDigger
             MapSizeZ = map.GetUpperBound(2) + 1;
             shadows.ResetShadows();
         }
+        public void MapBlock(int a, int b, int c, byte type)
+        {
+            this.Map[a, b, c] = (byte)type;
+            terrain.UpdateTile(a, b, c);
+            shadows.OnLocalBuild(a,b,c);
+        }
         #endregion
         MapManipulator mapmanipulator = new MapManipulator();
         #region IGameMode Members

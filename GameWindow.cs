@@ -63,6 +63,8 @@ namespace ManicDigger
         public float radius;
         public Vector3 center;
         public bool wasrendered = true;
+        public int indicesCount;
+        public int verticesCount;
     }
     public class Config3d
     {
@@ -588,13 +590,14 @@ namespace ManicDigger
             int y = (int)pos.Y;
             int z = (int)pos.Z;
            map.SetBlock(x, y, z, type);
-            terrain.UpdateTile(x, y, z);
+           terrain.UpdateTile(x, y, z);
+           // terrain.UpdateAllTiles();
             //          });
         }
         const bool ENABLE_FULLSCREEN = false;
         public ManicDiggerGameWindow()
-            : base(800, 600, GraphicsMode.Default, "",
-                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Adaptive;}
+            : base(1000, 550, GraphicsMode.Default, "",
+                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Adaptive;  }
         The3d the3d = new The3d();
         public int LoadTexture(string filename)
         {
@@ -984,14 +987,25 @@ namespace ManicDigger
             {
                 keyevent = e;
             }
+            if (Keyboard[OpenTK.Input.Key.PageUp] && GuiTyping == TypingState.Typing)
+            {
+                ChatPageScroll++;
+            }
+            if (Keyboard[OpenTK.Input.Key.PageDown] && GuiTyping == TypingState.Typing)
+            {
+                if(ChatPageScroll > 1)
+                ChatPageScroll--;
+            }
             if (guistate == GuiState.Normal)
             {
+                
                 if (Keyboard[OpenTK.Input.Key.Escape])
                 {
                     guistate = GuiState.EscapeMenu;
                     menustate = new MenuState();
                     FreeMouse = true;
                 }
+                
                 if (e.Key == OpenTK.Input.Key.Enter || e.Key == OpenTK.Input.Key.KeypadEnter)
                 {
                     if (GuiTyping == TypingState.Typing)
@@ -2215,16 +2229,15 @@ namespace ManicDigger
             GL.BindTexture(TextureTarget.Texture2D, terrain.terrainTexture);
 
             GL.MatrixMode(MatrixMode.Modelview);
-
-            Matrix4 camera;
-            if (overheadcamera)
-            {
-                camera = OverheadCamera();
-            }
-            else
-                camera = FppCamera();
-            GL.LoadMatrix(ref camera);
-            m_theModelView = camera;
+                Matrix4 camera;
+                if (overheadcamera)
+                {
+                    camera = OverheadCamera();
+                }
+                else
+                    camera = FppCamera();
+                GL.LoadMatrix(ref camera);
+                m_theModelView = camera;
                 DrawSkySphere();
                 terrain.Draw();
 
@@ -2235,10 +2248,10 @@ namespace ManicDigger
                 }
 
                 DrawCharacters((float)e.Time);
-                if (ENABLE_DRAW_TEST_CHARACTER)
+                /*if (ENABLE_DRAW_TEST_CHARACTER)
                 {
                     characterdrawer.DrawCharacter(a, game.PlayerPositionSpawn, 0, 0, true, (float)dt, GetPlayerTexture(255), new AnimationHint());
-                }
+                }*/
                 DrawPlayers((float)e.Time);
                 foreach (IModelToDraw m in game.Models)
                 {
@@ -2473,6 +2486,7 @@ namespace ManicDigger
             public string text;
             public DateTime time;
         }
+        int ChatPageScroll;
         List<Chatline> chatlines = new List<Chatline>();
         Dictionary<string, int> textures = new Dictionary<string, int>();
         AnimationState v0anim = new AnimationState();
@@ -2616,13 +2630,13 @@ namespace ManicDigger
             if (savegameexists == null) { savegameexists = SaveGameExists(); }
             if (guistate == GuiState.MainMenu)
             {
-                Draw2dBitmapFile("manicdigger.png", xcenter(565), 50, 565, 119);
                 Draw2dText(newgame, xcenter(TextSize(newgame, fontsize).Width), starty, fontsize, menustate.selected == 0 ? Color.Red : Color.White);
                 Draw2dText(loadgame, xcenter(TextSize(loadgame, fontsize).Width), starty + textheight * 1, fontsize,
                     savegameexists.Value ?
                     (menustate.selected == 1 ? Color.Red : Color.White)
                     : (menustate.selected == 1 ? Color.Red : Color.Gray));
                 Draw2dText(exitstr, xcenter(TextSize(exitstr, fontsize).Width), starty + textheight * 2, 20, menustate.selected == 2 ? Color.Red : Color.White);
+                Draw2dBitmapFile("manicdigger.png", xcenter(565), 50, 565, 119);
                 //DrawMouseCursor();
             }
         }
@@ -3126,7 +3140,8 @@ namespace ManicDigger
         {
             return (int)(Height / 2 - height / 2);
         }
-        int ChatScreenExpireTimeSeconds = 20;
+        public int ChatScreenExpireTimeSeconds = 20;
+        public int ChatLinesMaxToDraw = 10;
         private void DrawChatLines(bool all)
         {
             /*
@@ -3148,16 +3163,15 @@ namespace ManicDigger
             }
             else
             {
-                int maxtodraw = 10;
-                int first = chatlines.Count - maxtodraw;
+                int first = chatlines.Count - ChatLinesMaxToDraw * (ChatPageScroll + 1);
                 if (first < 0)
                 {
                     first = 0;
                 }
                 int count = chatlines.Count;
-                if (count > maxtodraw)
+                if (count > ChatLinesMaxToDraw)
                 {
-                    count = maxtodraw;
+                    count = ChatLinesMaxToDraw;
                 }
                 for (int i = first; i < first + count; i++)
                 {
@@ -3167,6 +3181,10 @@ namespace ManicDigger
             for (int i = 0; i < chatlines2.Count; i++)
             {
                 Draw2dText(chatlines2[i].text, 20, 90f + i * 25f, chatfontsize, Color.White);
+            }
+            if (ChatPageScroll != 0)
+            {
+                Draw2dText("Page: " + ChatPageScroll, 20, 90f + (-1) * 25f, chatfontsize, Color.Gray);
             }
         }
         static SizeF TextSize(string text, float fontsize)

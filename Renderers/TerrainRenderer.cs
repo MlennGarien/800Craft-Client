@@ -22,6 +22,7 @@ namespace ManicDigger
         void Draw();
         void UpdateAllTiles();
         void UpdateTile(int x, int y, int z);
+        TerrainChunkRenderer renderer { get; }
         int TrianglesCount();
         int texturesPacked { get; }
         int terrainTexture { get; }
@@ -56,6 +57,7 @@ namespace ManicDigger
         #region ITerrainDrawer Members
         public int ChunkUpdates { get; set; }
         #endregion
+        public TerrainChunkRenderer renderer { get; set; }
         #region ITerrainRenderer Members
         public int[] terrainTextures1d { get; set; }
         public int terrainTexturesPerAtlas { get; set; }
@@ -230,7 +232,6 @@ namespace ManicDigger
         public ILocalPlayerPosition localplayerposition { get; set; }
         [Inject]
         public IWorldFeaturesDrawer worldfeatures { get; set; }
-        [Inject]
         public TerrainChunkRenderer terrainchunkdrawer { get; set; }
         public event EventHandler<ExceptionEventArgs> OnCrash;
 
@@ -238,7 +239,7 @@ namespace ManicDigger
         public bool DONOTDRAWEDGES = true;
         public int texturesPacked { get { return 16; } } //16x16
         public int terrainTexture { get; set; }
-
+        public Bitmap texturebmp;
         public int chunkdrawdistance
         {
             get
@@ -328,25 +329,28 @@ namespace ManicDigger
                 Point playerpoint = new Point((int)(localplayerposition.LocalPlayerPosition.X / chunksize), (int)(localplayerposition.LocalPlayerPosition.Z / chunksize));
                 ProcessAllPriorityTodos();
                 List<TodoItem> l = new List<TodoItem>();
-                lock (terrainlock)
+                lock (l)
                 {
-                    FindChunksToDelete(l);
-                    FindChunksToAdd(l);
+                    lock (terrainlock)
+                    {
+                        FindChunksToDelete(l);
+                        FindChunksToAdd(l);
+                    }
+                    //without local cache, sort could crash when player moves during sort.
+                    localplayerpositioncache = localplayerposition.LocalPlayerPosition;
+                    l.Sort(FTodo);
+                    int max = 5;
+                    foreach(TodoItem to in l)//l.Count; i++)
+                    {
+                        var ti = to;
+                        if (exit.exit || exit2) { break; }
+                        CheckRespawn();
+                        ProcessAllPriorityTodos();
+                        if (!ProcessUpdaterTodo(ti)) { max++; }
+                    }
                 }
-                //without local cache, sort could crash when player moves during sort.
-                localplayerpositioncache = localplayerposition.LocalPlayerPosition;
-                l.Sort(FTodo);
-                int max = 5;
-                for (int i = 0; i < Math.Min(max, l.Count); i++)//l.Count; i++)
-                {
-                    var ti = l[i];
-                    if (exit.exit || exit2) { break; }
-                    CheckRespawn();
-                    ProcessAllPriorityTodos();
-                    if (!ProcessUpdaterTodo(ti)) { max++; }
-                }
+                updateThreadRunning--;
             }
-            updateThreadRunning--;
         }
         private void FindChunksToDelete(List<TodoItem> l)
         {
@@ -451,20 +455,17 @@ namespace ManicDigger
                 }
                 if (exit.exit || exit2) { return; }
                 Vector3[] ti;
-                lock (prioritytodo)
-                {
-                    prioritytodo.Sort(FVector3Arr);
-                    //todo remove duplicates
-                    ti = prioritytodo[0];//.Dequeue();
-                    prioritytodo.RemoveAt(0);
-                }
+                prioritytodo.Sort(FVector3Arr);
+                //todo remove duplicates
+                ti = prioritytodo[0];//.Dequeue();
+                prioritytodo.RemoveAt(0);
                 //Prepare list of near chunks to update.
                 //This is the slowest part.
                 Dictionary<Vector3, VerticesIndicesToLoad[]> nearchunksadd = new Dictionary<Vector3, VerticesIndicesToLoad[]>();
                 List<Vector3> nearchunksremove = new List<Vector3>();
-                for (int i = 0; i < ti.Length; i++)
+                foreach( Vector3 to in ti)
                 {
-                    var p = ti[i];
+                    var p = to;
                     var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
                     var chunkk = new List<VerticesIndicesToLoad>(chunk);
                     if (chunkk.Count() > 0)
@@ -477,39 +478,37 @@ namespace ManicDigger
                     }
                 }
                 //Update all near chunks at the same time, for flicker-free drawing.
-                lock (terrainlock)
+                foreach (Vector3 p in nearchunksremove)
                 {
-                    foreach (Vector3 p in nearchunksremove)
+                    if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
                     {
-                        if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
-                        {
-                            //crash fix. crash happens on UpdateAllTiles().
-                            continue;
-                        }
-                        int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
-                        if (b != null)
-                        {
-                            foreach (int id in b)
-                            {
-                                batcher.Remove(id);
-                            }
-                        }
-                        batchedblocks.Remove(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z));
+                        //crash fix. crash happens on UpdateAllTiles().
+                        continue;
                     }
-                    foreach (var k in nearchunksadd)
+                    int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
+                    if (b != null)
                     {
-                        var p = k.Key;
-                        var chunk = k.Value;
-                        List<int> ids = new List<int>();
-                        foreach (var cc in chunk)
+                        foreach (int id in b)
                         {
-                            ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
+                            batcher.Remove(id);
                         }
-                        batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)] = new BlockData() { V = p, A = ids.ToArray() };
                     }
+                    batchedblocks.Remove(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z));
+                }
+                foreach (var k in nearchunksadd)
+                {
+                    var p = k.Key;
+                    var chunk = k.Value;
+                    List<int> ids = new List<int>();
+                    foreach (var cc in chunk)
+                    {
+                        ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
+                    }
+                    batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)] = new BlockData() { V = p, A = ids.ToArray() };
                 }
             }
         }
+        
         private bool ProcessUpdaterTodo(TodoItem ti)
         {
             var p = ti.position;
@@ -520,8 +519,6 @@ namespace ManicDigger
                 {
                     try
                     {
-                        //lock (terrainlock)
-                        {
                             if (batchedblocks.ContainsKey(GetV3HashCode(p.X, p.Y, z)))
                             {
                                 continue;
@@ -549,7 +546,6 @@ namespace ManicDigger
                             {
                                 batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData();
                             }
-                        }
                     }
                     catch { Console.WriteLine("Chunk error"); }
                 }
@@ -709,29 +705,39 @@ namespace ManicDigger
             }
             return false;
         }
+        public TerrainChunkRenderer renderer
+        {
+            get
+            {
+                return terrainchunkdrawer;
+            }
+        }
         public void UpdateTile(int xx, int yy, int zz)
         {
-            List<Vector3> l = new List<Vector3>();
-            lock (prioritytodo)
+            lock (terrainlock)
             {
-                if (!IsChunkLoaded(xx / chunksize, yy / chunksize))
+                List<Vector3> l = new List<Vector3>();
+                lock (prioritytodo)
                 {
-                    return;
-                }
-                l.Add(new Vector3(xx / chunksize, yy / chunksize, zz / chunksize));
-                foreach (Vector3 t in TilesAround(new Vector3(xx, yy, zz)))
-                {
-                    int x = (int)t.X;
-                    int y = (int)t.Y;
-                    int z = (int)t.Z;
-                    if (x / chunksize != xx / chunksize
-                        || y / chunksize != yy / chunksize
-                        || z / chunksize != zz / chunksize)
+                    if (!IsChunkLoaded(xx / chunksize, yy / chunksize))
                     {
-                        l.Add(new Vector3(x / chunksize, y / chunksize, z / chunksize));
+                        return;
                     }
+                    l.Add(new Vector3(xx / chunksize, yy / chunksize, zz / chunksize));
+                    foreach (Vector3 t in TilesAround(new Vector3(xx, yy, zz)))
+                    {
+                        int x = (int)t.X;
+                        int y = (int)t.Y;
+                        int z = (int)t.Z;
+                        if (x / chunksize != xx / chunksize
+                            || y / chunksize != yy / chunksize
+                            || z / chunksize != zz / chunksize)
+                        {
+                            l.Add(new Vector3(x / chunksize, y / chunksize, z / chunksize));
+                        }
+                    }
+                    prioritytodo.Add(l.ToArray());
                 }
-                prioritytodo.Add(l.ToArray());
             }
         }
         public int TrianglesCount()
@@ -766,134 +772,7 @@ namespace ManicDigger
         }
         #endregion
     }
-    public class BlockDrawerTorch : IBlockDrawerTorch
-    {
-        [Inject]
-        public IGameData data;
-        [Inject]
-        public ITerrainRenderer terraindrawer;
-        public void AddTorch(List<ushort> myelements, List<VertexPositionTexture> myvertices, int x, int y, int z, TorchType type)
-        {
-            int tiletype = data.TileIdTorch;
-            FastColor curcolor = new FastColor(Color.White);
-            float torchsizexy = 0.2f;
-            float topx = 1f / 2f - torchsizexy / 2f;
-            float topy = 1f / 2f - torchsizexy / 2f;
-            float bottomx = 1f / 2f - torchsizexy / 2f;
-            float bottomy = 1f / 2f - torchsizexy / 2f;
-            topx += x;
-            topy += y;
-            bottomx += x;
-            bottomy += y;
-            if (type == TorchType.Front) { bottomx = x - torchsizexy; }
-            if (type == TorchType.Back) { bottomx = x + 1; }
-            if (type == TorchType.Left) { bottomy = y - torchsizexy; }
-            if (type == TorchType.Right) { bottomy = y + 1; }
-            Vector3 top00 = new Vector3(topx, z + 1, topy);
-            Vector3 top01 = new Vector3(topx, z + 1, topy + torchsizexy);
-            Vector3 top10 = new Vector3(topx + torchsizexy, z + 1, topy);
-            Vector3 top11 = new Vector3(topx + torchsizexy, z + 1, topy + torchsizexy);
-            Vector3 bottom00 = new Vector3(bottomx, z + 0, bottomy);
-            Vector3 bottom01 = new Vector3(bottomx, z + 0, bottomy + torchsizexy);
-            Vector3 bottom10 = new Vector3(bottomx + torchsizexy, z + 0, bottomy);
-            Vector3 bottom11 = new Vector3(bottomx + torchsizexy, z + 0, bottomy + torchsizexy);
-            //top
-            {
-                int sidetexture = data.GetTileTextureId(tiletype, TileSide.Top);
-                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
-                short lastelement = (short)myvertices.Count;
-                myvertices.Add(new VertexPositionTexture(top00.X, top00.Y, top00.Z, texrec.Left, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(top01.X, top01.Y, top01.Z, texrec.Left, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top10.X, top10.Y, top10.Z, texrec.Right, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(top11.X, top11.Y, top11.Z, texrec.Right, texrec.Bottom, curcolor));
-                myelements.Add((ushort)(lastelement + 0));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 2));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 3));
-                myelements.Add((ushort)(lastelement + 2));
-            }
-            //bottom - same as top, but z is 1 less.
-            {
-                int sidetexture = data.GetTileTextureId(tiletype, TileSide.Bottom);
-                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
-                short lastelement = (short)myvertices.Count;
-                myvertices.Add(new VertexPositionTexture(bottom00.X, bottom00.Y, bottom00.Z, texrec.Left, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom01.X, bottom01.Y, bottom01.Z, texrec.Left, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom10.X, bottom10.Y, bottom10.Z, texrec.Right, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom11.X, bottom11.Y, bottom11.Z, texrec.Right, texrec.Bottom, curcolor));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 0));
-                myelements.Add((ushort)(lastelement + 2));
-                myelements.Add((ushort)(lastelement + 3));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 2));
-            }
-            //front
-            {
-                int sidetexture = data.GetTileTextureId(tiletype, TileSide.Front);
-                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
-                short lastelement = (short)myvertices.Count;
-                myvertices.Add(new VertexPositionTexture(bottom00.X, bottom00.Y, bottom00.Z, texrec.Left, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom01.X, bottom01.Y, bottom01.Z, texrec.Right, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top00.X, top00.Y, top00.Z, texrec.Left, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(top01.X, top01.Y, top01.Z, texrec.Right, texrec.Top, curcolor));
-                myelements.Add((ushort)(lastelement + 0));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 2));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 3));
-                myelements.Add((ushort)(lastelement + 2));
-            }
-            //back - same as front, but x is 1 greater.
-            {
-                int sidetexture = data.GetTileTextureId(tiletype, TileSide.Back);
-                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
-                short lastelement = (short)myvertices.Count;
-                myvertices.Add(new VertexPositionTexture(bottom10.X, bottom10.Y, bottom10.Z, texrec.Right, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom11.X, bottom11.Y, bottom11.Z, texrec.Left, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top10.X, top10.Y, top10.Z, texrec.Right, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(top11.X, top11.Y, top11.Z, texrec.Left, texrec.Top, curcolor));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 0));
-                myelements.Add((ushort)(lastelement + 2));
-                myelements.Add((ushort)(lastelement + 3));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 2));
-            }
-            {
-                int sidetexture = data.GetTileTextureId(tiletype, TileSide.Left);
-                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
-                short lastelement = (short)myvertices.Count;
-                myvertices.Add(new VertexPositionTexture(bottom00.X, bottom00.Y, bottom00.Z, texrec.Right, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top00.X, top00.Y, top00.Z, texrec.Right, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom10.X, bottom10.Y, bottom10.Z, texrec.Left, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top10.X, top10.Y, top10.Z, texrec.Left, texrec.Top, curcolor));
-                myelements.Add((ushort)(lastelement + 0));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 2));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 3));
-                myelements.Add((ushort)(lastelement + 2));
-            }
-            //right - same as left, but y is 1 greater.
-            {
-                int sidetexture = data.GetTileTextureId(tiletype, TileSide.Right);
-                RectangleF texrec = TextureAtlas.TextureCoords2d(sidetexture, terraindrawer.texturesPacked);
-                short lastelement = (short)myvertices.Count;
-                myvertices.Add(new VertexPositionTexture(bottom01.X, bottom01.Y, bottom01.Z, texrec.Left, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top01.X, top01.Y, top01.Z, texrec.Left, texrec.Top, curcolor));
-                myvertices.Add(new VertexPositionTexture(bottom11.X, bottom11.Y, bottom11.Z, texrec.Right, texrec.Bottom, curcolor));
-                myvertices.Add(new VertexPositionTexture(top11.X, top11.Y, top11.Z, texrec.Right, texrec.Top, curcolor));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 0));
-                myelements.Add((ushort)(lastelement + 2));
-                myelements.Add((ushort)(lastelement + 3));
-                myelements.Add((ushort)(lastelement + 1));
-                myelements.Add((ushort)(lastelement + 2));
-            }
-        }
-    }
+    
     public interface IWorldFeaturesDrawer
     {
         void DrawWorldFeatures();
