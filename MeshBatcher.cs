@@ -11,7 +11,7 @@ namespace ManicDigger
         public MeshBatcher()
         {
         }
-        private void GenLists()
+        private void genlists()
         {
             int lists = GL.GenLists(listincrease);
             if (lists == 0)
@@ -20,9 +20,14 @@ namespace ManicDigger
             }
             this.lists.Add(lists);
         }
-        public int listincrease = 1024;
+        public int listincrease = 1000;
+        //public int nlists = 50000;
         private int GetList(int i)
         {
+            while (i >= lists.Count * listincrease)
+            {
+                genlists();
+            }
             return lists[i / listincrease] + i % listincrease;
         }
         private void ClearLists()
@@ -35,28 +40,23 @@ namespace ManicDigger
                 }
             }
         }
+        //int lists = -1;
         List<int> lists = new List<int>();
         int count = 0;
         public void Remove(int p)
         {
-            GetListInfo(p).empty = true;
             empty[p] = 0;
         }
         struct ToAdd
         {
             public ushort[] indices;
-            public int indicesCount;
             public VertexPositionTexture[] vertices;
-            public int verticesCount;
             public int id;
             public bool transparent;
             public int texture;
         }
         Queue<ToAdd> toadd = new Queue<ToAdd>();
-        public bool BindTexture = true;
-        //Just saves provided arguments.
-        //Display lists are created later, in Draw() called from the main thread.
-        public int Add(ushort[] indices, VertexPositionTexture[] vertices,  bool transparent, int texture)
+        public int Add(ushort[] p, VertexPositionTexture[] vertexPositionTexture, bool transparent, int texture)
         {
             int id;
             lock (toadd)
@@ -73,8 +73,8 @@ namespace ManicDigger
                 }
                 toadd.Enqueue(new ToAdd()
                 {
-                    indices = indices,
-                    vertices = vertices,
+                    indices = p,
+                    vertices = vertexPositionTexture,
                     id = id,
                     transparent = transparent,
                     texture = texture
@@ -82,166 +82,106 @@ namespace ManicDigger
             }
             return id;
         }
-        private void AllocateLists()
-        {
-            while (count >= lists.Count * listincrease)
-            {
-                GenLists();
-            }
-            while (count >= listinfoCount)
-            {
-                Array.Resize(ref listinfo, listinfoCount + listincrease);
-                for (int i = listinfoCount; i < listinfoCount + listincrease; i++)
-                {
-                    listinfo[i] = new ListInfo();
-                }
-                listinfoCount += listincrease;
-            }
-        }
         Dictionary<int, int> empty = new Dictionary<int, int>();
+        float addperframe = 0.5f;
+        float addcounter = 0;
         Vector3 playerpos;
         public void Draw(Vector3 playerpos)
         {
             this.playerpos = playerpos;
-            AllocateLists();
-            //Create display lists, which were saved with Add() call
-            //in another thread.
             lock (toadd)
             {
-                ToAdd t = new ToAdd();
-                while (toadd.Count > 0)
+                addcounter += addperframe;
+                while (//addcounter >= 1 &&
+                    toadd.Count > 0)
                 {
-                    try
+                    addcounter -= 1;
+                    ToAdd t = toadd.Dequeue();
+                    GL.NewList(GetList(t.id), ListMode.Compile);
+
+                    GL.BindTexture(TextureTarget.Texture2D, t.texture);
+                    GL.EnableClientState(ArrayCap.TextureCoordArray);
+                    GL.EnableClientState(ArrayCap.VertexArray);
+                    GL.EnableClientState(ArrayCap.ColorArray);
+                    unsafe
                     {
-                        t = toadd.Dequeue();
-                        GL.NewList(GetList(t.id), ListMode.Compile);
-                        GL.Begin(BeginMode.Triangles);
-                        for (int ii = 0; ii < t.indices.Length; ii++)
+                        fixed (VertexPositionTexture* p = t.vertices)
                         {
-                            var v = t.vertices[t.indices[ii]];
-                            GL.TexCoord2(v.u, v.v);
-                            GL.Vertex3(v.Position.X, v.Position.Y, v.Position.Z);
+                            GL.VertexPointer(3, VertexPointerType.Float, StrideOfVertices, (IntPtr)(0 + (byte*)p));
+                            GL.TexCoordPointer(2, TexCoordPointerType.Float, StrideOfVertices, (IntPtr)(12 + (byte*)p));
+                            GL.ColorPointer(4, ColorPointerType.UnsignedByte, StrideOfVertices, (IntPtr)(20 + (byte*)p));
+                            GL.DrawElements(BeginMode.Triangles, t.indices.Length, DrawElementsType.UnsignedShort, t.indices);
                         }
-                        GL.End();
-
-                        GL.EndList();
-                        ListInfo li = GetListInfo(t.id);
-                        li.transparent = t.transparent;
-                        li.empty = false;
-                        li.texture = GetTextureId(t.texture);
-                        li.indices = t.indices.Length;
                     }
-                    catch (Exception e)
+                    GL.DisableClientState(ArrayCap.TextureCoordArray);
+                    GL.DisableClientState(ArrayCap.VertexArray);
+                    GL.DisableClientState(ArrayCap.ColorArray);
+
+                    /*
+                    GL.Begin(BeginMode.Triangles);
+                    for (int ii = 0; ii < t.indices.Length; ii++)
                     {
-                        toadd.Enqueue(t);
+                        var v = t.vertices[t.indices[ii]];
+                        GL.TexCoord2(v.u, v.v);
+                        GL.Vertex3(v.Position.X, v.Position.Y, v.Position.Z);
                     }
+                    GL.End();
+                    */
+                    GL.EndList();
+                    GetListInfo(t.id).indicescount = t.indices.Length;
+                    GetListInfo(t.id).center = t.vertices[0].Position;//todo
+                    GetListInfo(t.id).transparent = t.transparent;
                 }
-            }
-
-            //Group display lists by used texture to minimize
-            //number of GL.BindTexture() calls.
-            SortListsByTexture();
-
-            //Need to first render all solid lists (to fill z-buffer), then transparent.
-            for (int i = 0; i < texturesCount; i++)
-            {
-                if (tocallSolid[i].Count == 0) { continue; }
-                if (BindTexture)
+                if (toadd.Count == 0)
                 {
-                    GL.BindTexture(TextureTarget.Texture2D, glTextures[i]);
-                }
-                GL.CallLists(tocallSolid[i].Count, ListNameType.Int, tocallSolid[i].Lists);
-            }
-            GL.Disable(EnableCap.CullFace);//for water.
-            for (int i = 0; i < texturesCount; i++)
-            {
-                if (tocallTransparent[i].Count == 0) { continue; }
-                if (BindTexture)
-                {
-                    GL.BindTexture(TextureTarget.Texture2D, glTextures[i]);
-                }
-                GL.CallLists(tocallTransparent[i].Count, ListNameType.Int, tocallTransparent[i].Lists);
-            }
-            GL.Enable(EnableCap.CullFace);
-        }
-        //Finds an index in glTextures array.
-        private int GetTextureId(int glTexture)
-        {
-            int id = Array.IndexOf(glTextures, glTexture);
-            if (id != -1)
-            {
-                return id;
-            }
-            id = Array.IndexOf(glTextures, 0);
-            if (id != -1)
-            {
-                glTextures[id] = glTexture;
-                return id;
-            }
-            int increase = 10;
-            Array.Resize(ref glTextures, glTextures.Length + increase);
-            glTextures[glTextures.Length - increase] = glTexture;
-            return glTextures.Length - increase;
-        }
-        //Maps from our inner texture id to real opengl texture id.
-        int[] glTextures = new int[10];
-        ToCall[] tocallSolid;
-        ToCall[] tocallTransparent;
-        class ToCall
-        {
-            public int[] Lists;
-            public int Count;
-        }
-        //todo dynamic
-        public int texturesCount = 10;
-        private void SortListsByTexture()
-        {
-            if (tocallSolid == null)
-            {
-                tocallSolid = new ToCall[texturesCount];
-                tocallTransparent = new ToCall[texturesCount];
-                for (int i = 0; i < texturesCount; i++)
-                {
-                    tocallSolid[i] = new ToCall();
-                    tocallTransparent[i] = new ToCall();
-                }
-                for (int i = 0; i < texturesCount; i++)
-                {
-                    tocallSolid[i].Lists = new int[MAX_DISPLAY_LISTS];
-                    tocallTransparent[i].Lists = new int[MAX_DISPLAY_LISTS];
+                    addcounter = 0;
                 }
             }
-            for (int i = 0; i < texturesCount; i++)
+            if (tocall == null)
             {
-                tocallSolid[i].Count = 0;
-                tocallTransparent[i].Count = 0;
+                tocall = new int[MAX_DISPLAY_LISTS];
             }
+            int tocallpos = 0;
             for (int i = 0; i < count; i++)
             {
-                ListInfo li = listinfo[i];
-                if (!li.render)
+                if (!empty.ContainsKey(i))
                 {
-                    continue;
-                }
-                if (li.empty)
-                {
-                    continue;
-                }
-                if (!li.transparent)
-                {
-                    ToCall tocall = tocallSolid[li.texture];
-                    tocall.Lists[tocall.Count] = GetList(i);
-                    tocall.Count++;
-                }
-                else
-                {
-                    ToCall tocall = tocallTransparent[li.texture];
-                    tocall.Lists[tocall.Count] = GetList(i);
-                    tocall.Count++;
+                    if (!GetListInfo(i).transparent)
+                    {
+                        tocall[tocallpos] = GetList(i);
+                        tocallpos++;
+                    }
                 }
             }
+            GL.CallLists(tocallpos, ListNameType.Int, tocall);
+            tocallpos = 0;
+            GL.Disable(EnableCap.CullFace);//for water.
+            for (int i = 0; i < count; i++)
+            {
+                if (!empty.ContainsKey(i))
+                {
+                    if (GetListInfo(i).transparent)
+                    {
+                        tocall[tocallpos] = GetList(i);
+                        tocallpos++;
+                    }
+                }
+            }
+            GL.CallLists(tocallpos, ListNameType.Int, tocall);
+            GL.Enable(EnableCap.CullFace);
+            //depth sorting. is it needed?
+            /*
+            List<int> alldrawlists = new List<int>();
+            for (int i = 0; i < count; i++)
+            {
+                alldrawlists.Add(i);
+            }
+            alldrawlists.Sort(f);
+            GL.CallLists(count, ListNameType.Int, alldrawlists.ToArray());
+            */
         }
         public int MAX_DISPLAY_LISTS = 32 * 1024;
+        int[] tocall;
         int strideofvertices = -1;
         int StrideOfVertices
         {
@@ -253,16 +193,20 @@ namespace ManicDigger
         }
         class ListInfo
         {
-            public bool empty;
-            public int indices;
+            public int indicescount;
+            public Vector3 center;
             public bool transparent;
-            public bool render = true;
-            public int texture;
         }
-        ListInfo[] listinfo = new ListInfo[0];
-        int listinfoCount = 0;
+        /// <summary>
+        /// Indices count in list.
+        /// </summary>
+        List<ListInfo> listinfo = new List<ListInfo>();
         private ListInfo GetListInfo(int id)
         {
+            while (id >= listinfo.Count)
+            {
+                listinfo.Add(new ListInfo());
+            }
             return listinfo[id];
         }
         public void Clear()
@@ -271,8 +215,7 @@ namespace ManicDigger
             count = 0;
             empty.Clear();
             toadd.Clear();
-            listinfo = new ListInfo[0];
-            listinfoCount = 0;
+            listinfo = new List<ListInfo>();
         }
         public int TotalTriangleCount
         {
@@ -287,13 +230,9 @@ namespace ManicDigger
                 {
                     if (!empty.ContainsKey(i))
                     {
-                        if (i < listinfoCount)
+                        if (i < listinfo.Count)
                         {
-                            ListInfo li = GetListInfo(i);
-                            if (li.render)
-                            {
-                                sum += li.indices;
-                            }
+                            sum += GetListInfo(i).indicescount;
                         }
                     }
                 }
