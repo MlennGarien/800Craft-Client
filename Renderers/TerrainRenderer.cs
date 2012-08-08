@@ -273,11 +273,11 @@ namespace ManicDigger
             {
                 terrainTexturesPerAtlas = atlas1dheight / (atlas2d.Width / atlas2dtiles);
                 List<Bitmap> atlases1d = new TextureAtlasConverter().Atlas2dInto1d(atlas2d, atlas2dtiles, atlas1dheight);
-                foreach (Bitmap bmp in atlases1d)
+                atlases1d.ForEach(delegate(Bitmap bmp)
                 {
                     terrainTextures1d.Add(the3d.LoadTexture(bmp));
                     bmp.Dispose();
-                }
+                });
             }
             this.terrainTextures1d = terrainTextures1d.ToArray();
             updateThreadRunning++;
@@ -340,14 +340,14 @@ namespace ManicDigger
                     localplayerpositioncache = localplayerposition.LocalPlayerPosition;
                     l.Sort(FTodo);
                     int max = 5;
-                    foreach(TodoItem to in l)//l.Count; i++)
+                    l.ForEach(delegate(TodoItem to)
                     {
                         var ti = to;
-                        if (exit.exit || exit2) { break; }
+                        if (!exit.exit || !exit2)
                         CheckRespawn();
                         ProcessAllPriorityTodos();
                         if (!ProcessUpdaterTodo(ti)) { max++; }
-                    }
+                    });
                 }
                 updateThreadRunning--;
             }
@@ -478,12 +478,11 @@ namespace ManicDigger
                     }
                 }
                 //Update all near chunks at the same time, for flicker-free drawing.
-                foreach (Vector3 p in nearchunksremove)
+                nearchunksremove.ForEach(delegate(Vector3 p)
                 {
                     if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
                     {
                         //crash fix. crash happens on UpdateAllTiles().
-                        continue;
                     }
                     int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
                     if (b != null)
@@ -494,7 +493,7 @@ namespace ManicDigger
                         }
                     }
                     batchedblocks.Remove(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z));
-                }
+                });
                 foreach (var k in nearchunksadd)
                 {
                     var p = k.Key;

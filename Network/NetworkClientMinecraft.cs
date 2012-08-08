@@ -100,6 +100,7 @@ namespace ManicDigger
             }
             for (; ; )
             {
+                if (ManicDiggerGameWindow.Disconnected) return;
                 if (!main.Poll(0, SelectMode.SelectRead))
                 {
                     break;
@@ -201,14 +202,15 @@ namespace ManicDigger
                 case MinecraftServerPacketId.ServerIdentification:
                     {
                         totalread += 1 + NetworkHelper.StringLength + NetworkHelper.StringLength + 1; if (received.Count < totalread) { return 0; }
-                        
+
                         ServerPlayerIdentification p = new ServerPlayerIdentification();
                         p.ProtocolVersion = br.ReadByte();
                         string invalidversionstr = "Invalid game version. Local: {0}, Server: {1}";
-                        if (!(p.ProtocolVersion == 7 || p.ProtocolVersion == 6))
+                        if (!(p.ProtocolVersion == 7 || p.ProtocolVersion == 8))
                         {
-                            throw new Exception(string.Format(invalidversionstr,
-                                "Minecraft 7", "Minecraft " + p.ProtocolVersion));
+                            ManicDiggerGameWindow.DisconnectMessage = string.Format(invalidversionstr,
+                                "Minecraft 7", "Minecraft " + p.ProtocolVersion);
+                            ManicDiggerGameWindow.Disconnected = true;
                         }
                         p.ServerName = NetworkHelper.ReadString64(br);
                         p.ServerMotd = NetworkHelper.ReadString64(br);
@@ -217,6 +219,7 @@ namespace ManicDigger
                         this.serverName = p.ServerName;
                         this.ServerMotd = p.ServerMotd;
                         ChatLog("---Connected---");
+
                     }
                     break;
                 case MinecraftServerPacketId.Ping:
@@ -231,63 +234,69 @@ namespace ManicDigger
                     break;
                 case MinecraftServerPacketId.LevelDataChunk:
                     {
-                        totalread += 2 + 1024 + 1; if (received.Count < totalread) { return 0; }
-                        int chunkLength = NetworkHelper.ReadInt16(br);
-                        byte[] chunkData = br.ReadBytes(1024);
-                        lock (chunkData)
+                        lock (Map)
                         {
-                            BinaryWriter bw1 = new BinaryWriter(receivedMapStream);
-                            byte[] chunkDataWithoutPadding = new byte[chunkLength];
-                            for (int i = 0; i < chunkLength; i++)
+                            totalread += 2 + 1024 + 1; if (received.Count < totalread) { return 0; }
+                            int chunkLength = NetworkHelper.ReadInt16(br);
+                            byte[] chunkData = br.ReadBytes(1024);
+                            lock (chunkData)
                             {
-                                chunkDataWithoutPadding[i] = chunkData[i];
+                                BinaryWriter bw1 = new BinaryWriter(receivedMapStream);
+                                byte[] chunkDataWithoutPadding = new byte[chunkLength];
+                                for (int i = 0; i < chunkLength; i++)
+                                {
+                                    chunkDataWithoutPadding[i] = chunkData[i];
+                                }
+                                bw1.Write(chunkDataWithoutPadding);
+                                MapLoadingPercentComplete = br.ReadByte();
+                                InvokeMapLoadingProgress(MapLoadingPercentComplete, (int)receivedMapStream.Length);
                             }
-                            bw1.Write(chunkDataWithoutPadding);
-                            MapLoadingPercentComplete = br.ReadByte();
-                            InvokeMapLoadingProgress(MapLoadingPercentComplete, (int)receivedMapStream.Length);
                         }
                     }
                     break;
                 case MinecraftServerPacketId.LevelFinalize:
                     {
-                        totalread += 2 + 2 + 2; if (received.Count < totalread) { return 0; }
-                        mapreceivedsizex = NetworkHelper.ReadInt16(br);
-                        mapreceivedsizez = NetworkHelper.ReadInt16(br);
-                        mapreceivedsizey = NetworkHelper.ReadInt16(br);
-                        receivedMapStream.Seek(0, SeekOrigin.Begin);
-                        MemoryStream decompressed = new MemoryStream(GzipCompression.Decompress(receivedMapStream.ToArray()));
-                        if (decompressed.Length != mapreceivedsizex * mapreceivedsizey * mapreceivedsizez +
-                            (decompressed.Length % 1024))
+                        lock (Map)
                         {
-                            //throw new Exception();
-                            Console.WriteLine("warning: invalid map data size");
-                        }
-                        byte[, ,] receivedmap = new byte[mapreceivedsizex, mapreceivedsizey, mapreceivedsizez];
-                        {
-                            BinaryReader br2 = new BinaryReader(decompressed);
-                            int size = NetworkHelper.ReadInt32(br2);
-                            for (int z = 0; z < mapreceivedsizez; z++)
+                            totalread += 2 + 2 + 2; if (received.Count < totalread) { return 0; }
+                            mapreceivedsizex = NetworkHelper.ReadInt16(br);
+                            mapreceivedsizez = NetworkHelper.ReadInt16(br);
+                            mapreceivedsizey = NetworkHelper.ReadInt16(br);
+                            receivedMapStream.Seek(0, SeekOrigin.Begin);
+                            MemoryStream decompressed = new MemoryStream(GzipCompression.Decompress(receivedMapStream.ToArray()));
+                            if (decompressed.Length != mapreceivedsizex * mapreceivedsizey * mapreceivedsizez +
+                                (decompressed.Length % 1024))
                             {
-                                for (int y = 0; y < mapreceivedsizey; y++)
+                                //throw new Exception();
+                                Console.WriteLine("warning: invalid map data size");
+                            }
+                            byte[, ,] receivedmap = new byte[mapreceivedsizex, mapreceivedsizey, mapreceivedsizez];
+                            {
+                                BinaryReader br2 = new BinaryReader(decompressed);
+                                int size = NetworkHelper.ReadInt32(br2);
+                                for (int z = 0; z < mapreceivedsizez; z++)
                                 {
-                                    for (int x = 0; x < mapreceivedsizex; x++)
+                                    for (int y = 0; y < mapreceivedsizey; y++)
                                     {
-                                        receivedmap[x, y, z] = br2.ReadByte();
+                                        for (int x = 0; x < mapreceivedsizex; x++)
+                                        {
+                                            receivedmap[x, y, z] = br2.ReadByte();
+                                        }
                                     }
                                 }
                             }
-                        }
-                        Map.Map.UseMap(receivedmap);
-                        Map.Map.MapSizeX = receivedmap.GetUpperBound(0) + 1;
-                        Map.Map.MapSizeY = receivedmap.GetUpperBound(1) + 1;
-                        Map.Map.MapSizeZ = receivedmap.GetUpperBound(2) + 1;
+                            Map.Map.UseMap(receivedmap);
+                            Map.Map.MapSizeX = receivedmap.GetUpperBound(0) + 1;
+                            Map.Map.MapSizeY = receivedmap.GetUpperBound(1) + 1;
+                            Map.Map.MapSizeZ = receivedmap.GetUpperBound(2) + 1;
 
-                        Console.WriteLine("Game loaded successfully.");
-                        if (MapLoaded != null)
-                        {
-                            MapLoaded.Invoke(this, new MapLoadedEventArgs() { });
+                            Console.WriteLine("Game loaded successfully.");
+                            if (MapLoaded != null)
+                            {
+                                MapLoaded.Invoke(this, new MapLoadedEventArgs() { });
+                            }
+                            loadedtime = DateTime.Now;
                         }
-                        loadedtime = DateTime.Now;
                     }
                     break;
                 case MinecraftServerPacketId.SetBlock:

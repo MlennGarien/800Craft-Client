@@ -8,14 +8,14 @@ namespace ManicDigger
 {
     public class TextPart
     {
-        public Color color;
+        public FastColor color;
         public string text;
     }
     public struct Text
     {
         public string text;
         public float fontsize;
-        public Color color;
+        public FastColor color;
         public override int GetHashCode()
         {
             return text.GetHashCode() % fontsize.GetHashCode() % color.GetHashCode();
@@ -36,18 +36,8 @@ namespace ManicDigger
     {
         public Bitmap MakeTextTexture(Text t)
         {
-            Font font;
-            if (NewFont)
-            {
-                //outlined font looks smaller
-                t.fontsize = Math.Max(t.fontsize, 9);
-                t.fontsize *= 1.65f;
-                font = new Font("Arial", t.fontsize, FontStyle.Bold);
-            }
-            else
-            {
-                font = new Font("Verdana", t.fontsize);
-            }
+            Font font = ManicDiggerGameWindow.fn;
+                t.fontsize = font.Size;
             var parts = DecodeColors(t.text, t.color);
             float totalwidth = 0;
             float totalheight = 0;
@@ -63,10 +53,6 @@ namespace ManicDigger
                         {
                             continue;
                         }
-                        if (NewFont)
-                        {
-                            size.Width *= 0.7f;
-                        }
                         totalwidth += size.Width;
                         totalheight = Math.Max(totalheight, size.Height);
                         sizes.Add(size);
@@ -74,45 +60,23 @@ namespace ManicDigger
                 }
             }
             SizeF size2 = new SizeF(NextPowerOfTwo((uint)totalwidth), NextPowerOfTwo((uint)totalheight));
-            Bitmap bmp2 = new Bitmap((int)size2.Width, (int)size2.Height);
+            Bitmap bmp2 = new Bitmap((int)size2.Width + 100, (int)size2.Height);
             using (Graphics g2 = Graphics.FromImage(bmp2))
             {
                 float currentwidth = 0;
                 for (int i = 0; i < parts.Count; i++)
                 {
-                    SizeF sizei = sizes[i];
+                    parts[i].text = parts[i].text.Trim();
+                    SizeF sizei = g2.MeasureString(parts[i].text, font);
                     if (sizei.Width == 0 || sizei.Height == 0)
                     {
                         continue;
                     }
-                    if (NewFont)
-                    {
-                        StringFormat format = StringFormat.GenericTypographic;
+                    // g2.FillRectangle(new SolidBrush(Color.Black), currentwidth, 0, sizei.Width, sizei.Height);
+                    g2.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+                    g2.DrawString(parts[i].text, ManicDiggerGameWindow.fn, new SolidBrush(Color.Black), currentwidth + 1.3f, 1.3f);
+                    g2.DrawString(parts[i].text, font, new SolidBrush(parts[i].color.ToColor()), currentwidth, 0);
 
-                        g2.FillRectangle(new SolidBrush(Color.FromArgb(textalpha, 0, 0, 0)), currentwidth, 0, sizei.Width, sizei.Height);
-                        g2.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                        //g2.DrawString(parts[i].text, font, new SolidBrush(parts[i].color), currentwidth, 0);
-                        Rectangle rect = new Rectangle() { X = (int)currentwidth, Y = 0 };
-                        using (GraphicsPath path = GetStringPath(parts[i].text, t.fontsize, rect, font, format))
-                        {
-                            g2.SmoothingMode = SmoothingMode.AntiAlias;
-                            RectangleF off = rect;
-                            off.Offset(2, 2);
-                            using (GraphicsPath offPath = GetStringPath(parts[i].text, t.fontsize, off, font, format))
-                            {
-                                Brush b = new SolidBrush(Color.FromArgb(100, 0, 0, 0));
-                                g2.FillPath(b, offPath);
-                                b.Dispose();
-                            }
-                            g2.FillPath(new SolidBrush(parts[i].color), path);
-                            g2.DrawPath(Pens.Black, path);
-                        }
-                    }
-                    else
-                    {
-                        g2.FillRectangle(new SolidBrush(Color.Black), currentwidth, 0, sizei.Width, sizei.Height);
-                        g2.DrawString(parts[i].text, font, new SolidBrush(parts[i].color), currentwidth, 0);
-                    }
                     currentwidth += sizei.Width;
                 }
             }
@@ -136,17 +100,17 @@ namespace ManicDigger
             x++;
             return x;
         }
-        public List<TextPart> DecodeColors(string s, Color defaultcolor)
+        public List<TextPart> DecodeColors(String s, FastColor defaultcolor)
         {
             List<TextPart> parts = new List<TextPart>();
             int i = 0;
-            Color currentcolor = defaultcolor;
-            string currenttext = "";
+            FastColor currentcolor = defaultcolor;
+            String currenttext = null;
             for (; ; )
             {
                 if (i >= s.Length)
                 {
-                    if (currenttext != "")
+                    if (currenttext != null)
                     {
                         parts.Add(new TextPart() { text = currenttext, color = currentcolor });
                     }
@@ -159,11 +123,11 @@ namespace ManicDigger
                         int? color = HexToInt(s[i + 1]);
                         if (color != null)
                         {
-                            if (currenttext != "")
+                            if (currenttext != null)
                             {
                                 parts.Add(new TextPart() { text = currenttext, color = currentcolor });
                             }
-                            currenttext = "";
+                            currenttext = null;
                             currentcolor = GetColor(color.Value);
                             i++;
                             goto next;
@@ -173,61 +137,32 @@ namespace ManicDigger
                     {
                     }
                 }
-                currenttext += s[i];
+                    currenttext += s[i];
             next:
                 i++;
             }
             return parts;
         }
-        /// <summary> Strips all ampersand color codes and doubled-up ampersands. </summary>
-        public static string StripColors(string input)
-        {
-            if (input == null) throw new ArgumentNullException("input");
-            if (input.IndexOf('&') == -1)
-            {
-                return input;
-            }
-            else
-            {
-                StringBuilder output = new StringBuilder(input.Length);
-                for (int i = 0; i < input.Length; i++)
-                {
-                    if (input[i] == '&')
-                    {
-                        if (i == input.Length - 1)
-                        {
-                            break;
-                        }
-                        i++;
-                    }
-                    else
-                    {
-                        output.Append(input[i]);
-                    }
-                }
-                return output.ToString();
-            }
-        }
-        private Color GetColor(int currentcolor)
+        private FastColor GetColor(int currentcolor)
         {
             switch (currentcolor)
             {
-                case 0: { return Color.FromArgb(0, 0, 0); }
-                case 1: { return Color.FromArgb(0, 0, 191); }
-                case 2: { return Color.FromArgb(0, 191, 0); }
-                case 3: { return Color.FromArgb(0, 191, 191); }
-                case 4: { return Color.FromArgb(191, 0, 0); }
-                case 5: { return Color.FromArgb(191, 0, 191); }
-                case 6: { return Color.FromArgb(191, 191, 0); }
-                case 7: { return Color.FromArgb(191, 191, 191); }
-                case 8: { return Color.FromArgb(40, 40, 40); }
-                case 9: { return Color.FromArgb(64, 64, 255); }
-                case 10: { return Color.FromArgb(64, 255, 64); }
-                case 11: { return Color.FromArgb(64, 255, 255); }
-                case 12: { return Color.FromArgb(255, 64, 64); }
-                case 13: { return Color.FromArgb(255, 64, 255); }
-                case 14: { return Color.FromArgb(255, 255, 64); }
-                case 15: { return Color.FromArgb(255, 255, 255); }
+                case 0: { return new FastColor(Color.FromArgb(0, 0, 0)); }
+                case 1: { return  new FastColor(Color.FromArgb(0, 0, 191)); }
+                case 2: { return  new FastColor(Color.FromArgb(0, 191, 0)); }
+                case 3: { return  new FastColor(Color.FromArgb(0, 191, 191)); }
+                case 4: { return  new FastColor(Color.FromArgb(191, 0, 0)); }
+                case 5: { return  new FastColor(Color.FromArgb(191, 0, 191)); }
+                case 6: { return  new FastColor(Color.FromArgb(191, 191, 0)); }
+                case 7: { return  new FastColor(Color.FromArgb(191, 191, 191)); }
+                case 8: { return  new FastColor(Color.FromArgb(40, 40, 40)); }
+                case 9: { return  new FastColor(Color.FromArgb(64, 64, 255)); }
+                case 10: { return  new FastColor(Color.FromArgb(64, 255, 64)); }
+                case 11: { return  new FastColor(Color.FromArgb(64, 255, 255)); }
+                case 12: { return  new FastColor(Color.FromArgb(255, 64, 64)); }
+                case 13: { return  new FastColor(Color.FromArgb(255, 64, 255)); }
+                case 14: { return  new FastColor(Color.FromArgb(255, 255, 64)); }
+                case 15: { return  new FastColor(Color.FromArgb(255, 255, 255)); }
                 default: throw new Exception();
             }
         }

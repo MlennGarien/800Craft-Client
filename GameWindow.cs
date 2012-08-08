@@ -70,9 +70,9 @@ namespace ManicDigger
     {
         public bool ENABLE_BACKFACECULLING = true;
         public bool ENABLE_TRANSPARENCY = true;
-        public bool ENABLE_MIPMAPS = true;
+        public bool ENABLE_MIPMAPS = false;
         public bool ENABLE_VSYNC = false;
-        public bool ENABLE_VISIBILITY_CULLING = false;
+        public bool ENABLE_VISIBILITY_CULLING = true;
         public float viewdistance = 256;
     }
     public interface IThe3d
@@ -310,6 +310,8 @@ namespace ManicDigger
         //http://www.opentk.com/doc/graphics/textures/loading
         public int LoadTexture(Bitmap bmp)
         {
+            bool convertedbitmap = false;
+            
             GL.Enable(EnableCap.Texture2D);
             int id = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, id);
@@ -320,7 +322,7 @@ namespace ManicDigger
             }
             else
             {
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D); //DOES NOT WORK ON ATI GRAPHIC CARDS
+                //GL.GenerateMipmap(GenerateMipmapTarget.Texture2D); //DOES NOT WORK ON ATI GRAPHIC CARDS
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 1); //DOES NOT WORK ON ???
                 int[] MipMapCount = new int[1];
                 GL.GetTexParameter(TextureTarget.Texture2D, GetTextureParameter.TextureMaxLevel, out MipMapCount[0]);
@@ -628,10 +630,12 @@ namespace ManicDigger
         }
         [Inject]
         public MapManipulator mapManipulator { get; set; }
+
+        public static System.Drawing.Text.PrivateFontCollection pfc = new System.Drawing.Text.PrivateFontCollection();
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-
+    
             string version = GL.GetString(StringName.Version);
             int major = (int)version[0];
             int minor = (int)version[2];
@@ -696,6 +700,7 @@ namespace ManicDigger
 
         void ManicDiggerGameWindow_KeyPress(object sender, OpenTK.KeyPressEventArgs e)
         {
+            if (e.KeyChar == '&') return;
             if ((e.KeyChar == 't' || e.KeyChar == 'T') && GuiTyping == TypingState.None)
             {
                 GuiTyping = TypingState.Typing;
@@ -713,6 +718,7 @@ namespace ManicDigger
             {
                 char c = e.KeyChar; if (char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || char.IsPunctuation(c) || char.IsSeparator(c) || char.IsSymbol(c))
                 {
+                    if (GuiTypingBuffer.Length > 64) return;
                     GuiTypingBuffer += e.KeyChar;
                 }
             }
@@ -833,7 +839,7 @@ namespace ManicDigger
                                 }
                             }
                         }
-                        catch(Exception e) { Console.WriteLine("Cannot update tile! : " + e.Message); }
+                        catch (Exception e) { Console.WriteLine("Cannot update tile! : " + e.Message); }
                     }
                     else if (cmd == "savefeature")
                     {
@@ -943,7 +949,7 @@ namespace ManicDigger
                     }
                     else
                     {
-                        string chatline = GuiTypingBuffer.Substring(0, Math.Min(GuiTypingBuffer.Length, 64));
+                        string chatline = GuiTypingBuffer.Substring(0, Math.Min(GuiTypingBuffer.Length, 128));
                         network.SendChat(chatline);
                     }
                 }
@@ -1095,7 +1101,7 @@ namespace ManicDigger
                         Log(string.Format("File {0} not found.", defaultserverfile));
                     }
                 }
-                if (e.Key == OpenTK.Input.Key.F3)
+                if (e.Key == OpenTK.Input.Key.Z)
                 {
                     ENABLE_FREEMOVE = !ENABLE_FREEMOVE;
                     if (ENABLE_FREEMOVE) { Log("Freemove enabled."); }
@@ -2239,20 +2245,15 @@ namespace ManicDigger
                 GL.LoadMatrix(ref camera);
                 m_theModelView = camera;
                 DrawSkySphere();
+                DrawCharacters((float)e.Time);
+                DrawPlayers((float)e.Time);
+                
                 terrain.Draw();
-
                 particleEffectBlockBreak.DrawImmediateParticleEffects(e.Time);
                 if (ENABLE_DRAW2D)
                 {
                     DrawLinesAroundSelectedCube(pickcubepos);
                 }
-
-                DrawCharacters((float)e.Time);
-                /*if (ENABLE_DRAW_TEST_CHARACTER)
-                {
-                    characterdrawer.DrawCharacter(a, game.PlayerPositionSpawn, 0, 0, true, (float)dt, GetPlayerTexture(255), new AnimationHint());
-                }*/
-                DrawPlayers((float)e.Time);
                 foreach (IModelToDraw m in game.Models)
                 {
                     if (m.Id == selectedmodelid)
@@ -2280,6 +2281,10 @@ namespace ManicDigger
             Draw2d();
             DrawPlayerNames();
             //OnResize(new EventArgs());
+            if (Disconnected)
+            {
+                DrawDisconnected(DisconnectMessage);
+            }
             SwapBuffers();
         }
          private void SetFog()
@@ -2980,6 +2985,7 @@ namespace ManicDigger
             }
             DrawMaterialSelector();
         }
+        
         int whitetexture = -1;
         void InventoryMouse()
         {
@@ -3142,20 +3148,30 @@ namespace ManicDigger
         }
         public int ChatScreenExpireTimeSeconds = 20;
         public int ChatLinesMaxToDraw = 10;
-        private void DrawChatLines(bool all)
+        public static int ChatFontSize = 10;
+        public static FontFamily ff;
+        public static Font fn;
+        public void DrawChatLines(bool all)
         {
-            /*
-            if (chatlines.Count>0 && (DateTime.Now - chatlines[0].time).TotalSeconds > 10)
+            if (ff == null)
             {
-                chatlines.RemoveAt(0);
+                pfc.AddFontFile("data/minecraftia.ttf");
+                ff = pfc.Families[0];
+                fn = new Font(ff, ChatFontSize, FontStyle.Regular);
             }
-            */
             List<Chatline> chatlines2 = new List<Chatline>();
             if (!all)
             {
-                foreach (Chatline c in chatlines)
+                if (chatlines.Count > 11)
                 {
-                    if ((DateTime.Now - c.time).TotalSeconds < ChatScreenExpireTimeSeconds)
+                    for (int i = chatlines.Count - 11; i < chatlines.Count; i++)
+                    {
+                        chatlines2.Add(chatlines[i]);
+                    }
+                }
+                else
+                {
+                    foreach (Chatline c in chatlines)
                     {
                         chatlines2.Add(c);
                     }
@@ -3180,16 +3196,24 @@ namespace ManicDigger
             }
             for (int i = 0; i < chatlines2.Count; i++)
             {
-                Draw2dText(chatlines2[i].text, 20, 90f + i * 25f, chatfontsize, Color.White);
+               // font.Options.Colour = Color.White;
+                //textdrawer.MakeTextTexture(new Text(){ text = chatlines2[i].text, fontsize=ChatFontSize, color = Color.White});
+                Draw2dText(chatlines2[i].text, 20, 90f + i * 25f, ChatFontSize, Color.White);
             }
             if (ChatPageScroll != 0)
             {
-                Draw2dText("Page: " + ChatPageScroll, 20, 90f + (-1) * 25f, chatfontsize, Color.Gray);
+                Draw2dText("Page: " + ChatPageScroll, 20, 90f + (-1) * 25f, ChatFontSize, Color.Gray);
             }
         }
         static SizeF TextSize(string text, float fontsize)
         {
-            var font = new Font("Verdana", fontsize);
+            if (ff == null)
+            {
+                pfc.AddFontFile("data/minecraftia.ttf");
+                ff = pfc.Families[0];
+                fn = new Font(ff, ChatFontSize, FontStyle.Regular);
+            }
+            var font = new Font(ff.Name, fontsize);
             Bitmap bmp = new Bitmap(1, 1);
             Graphics g = Graphics.FromImage(bmp);
             SizeF size = g.MeasureString(text, font);
@@ -3237,7 +3261,7 @@ namespace ManicDigger
             if (color == null) { color = Color.White; }
             var t = new Text();
             t.text = text;
-            t.color = color.Value;
+            t.color = new FastColor(color.Value);
             t.fontsize = fontsize;
             CachedTexture ct;
             if (!cachedTextTextures.ContainsKey(t))
@@ -3322,7 +3346,7 @@ namespace ManicDigger
             VertexPositionTexture[] vertices = new VertexPositionTexture[todraw.Count * 4];
             ushort[] indices = new ushort[todraw.Count * 4];
             ushort i=0;
-            foreach (var v in todraw)
+            todraw.ForEach(delegate(Draw2dData v)
             {
                 RectangleF rect;
                 if (v.inAtlasId == null)
@@ -3345,7 +3369,7 @@ namespace ManicDigger
                 indices[i + 2] = (ushort)(i + 2);
                 indices[i + 3] = (ushort)(i + 3);
                 i += 4;
-            }
+            });
             GL.EnableClientState(ArrayCap.TextureCoordArray);
             GL.EnableClientState(ArrayCap.VertexArray);
             GL.EnableClientState(ArrayCap.ColorArray);
@@ -3547,14 +3571,36 @@ namespace ManicDigger
             }
         }
         bool titleset = false;
-        string applicationname = "Manic Digger";
+        string applicationname = "800Craft Client";
         #region ILocalPlayerPosition Members
         public Vector3 LocalPlayerPosition { get { return player.playerposition; } set { player.playerposition = value; } }
         public Vector3 LocalPlayerOrientation { get { return player.playerorientation; } set { player.playerorientation = value; } }
         #endregion
         public void AddChatline(string s)
         {
-            chatlines.Add(new Chatline() { text = s, time = DateTime.Now });
+            if (s.Length > 192)
+            {
+
+                chatlines.Add(new Chatline() { text = s.Substring(0, 64), time = DateTime.Now });
+                chatlines.Add(new Chatline() { text = s.Substring(64, 64), time = DateTime.Now });
+                chatlines.Add(new Chatline() { text = s.Substring(128, 64), time = DateTime.Now });
+                chatlines.Add(new Chatline() { text = s.Substring(192), time = DateTime.Now });
+            }
+            else if (s.Length > 128)
+            {
+                chatlines.Add(new Chatline() { text = s.Substring(0, 64), time = DateTime.Now });
+                chatlines.Add(new Chatline() { text = s.Substring(64, 64), time = DateTime.Now });
+                chatlines.Add(new Chatline() { text = s.Substring(128), time = DateTime.Now });
+            }
+            else if (s.Length > 64)
+            {
+                chatlines.Add(new Chatline() { text = s.Substring(0, 64), time = DateTime.Now });
+                chatlines.Add(new Chatline() { text = s.Substring(64), time = DateTime.Now });
+            }
+            else
+            {
+                chatlines.Add(new Chatline() { text = s, time = DateTime.Now });
+            }
         }
         #region ILocalPlayerPosition Members
         public bool Swimming

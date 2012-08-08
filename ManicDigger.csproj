@@ -14,7 +14,7 @@
     <FileAlignment>512</FileAlignment>
     <StartupObject>
     </StartupObject>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>c.snk</AssemblyOriginatorKeyFile>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
@@ -109,6 +109,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="c.snk" />
+    <None Include="minecraftia.ttf" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="ConsoleForm.resx">
