@@ -999,7 +999,7 @@ namespace ManicDigger
             }
             if (Keyboard[OpenTK.Input.Key.PageDown] && GuiTyping == TypingState.Typing)
             {
-                if(ChatPageScroll > 1)
+                if(ChatPageScroll > 0)
                 ChatPageScroll--;
             }
             if (guistate == GuiState.Normal)
@@ -1473,7 +1473,6 @@ namespace ManicDigger
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-
             GL.Viewport(0, 0, Width, Height);
             Set3dProjection();
         }
@@ -1612,6 +1611,7 @@ namespace ManicDigger
         bool mouserightclick = false;
         bool mouserightdeclick = false;
         bool wasmouseright = false;
+        System.DateTime lastUsedSpace = DateTime.Now;
         void FrameTick(FrameEventArgs e)
         {
             //if ((DateTime.Now - lasttodo).TotalSeconds > BuildDelay && todo.Count > 0)
@@ -2042,8 +2042,7 @@ namespace ManicDigger
             BlockPosSide pick0;
             if (pick2.Count > 0 &&
                 ((pickdistanceok && (playertileempty || (playertileemptyclose)) )
-                || overheadcamera)
-                )
+                || overheadcamera))
             {
                 pickcubepos = pick2[0].Current();
                 pickcubepos = new Vector3((int)pickcubepos.X, (int)pickcubepos.Y, (int)pickcubepos.Z);
@@ -2120,7 +2119,7 @@ namespace ManicDigger
                                 new Vector3((int)tile.Current().X, (int)tile.Current().Z, (int)tile.Current().Y), tile.pos,
                                 right);
                             //network.SendSetBlock(new Vector3((int)newtile.X, (int)newtile.Z, (int)newtile.Y),
-                            //    right ? BlockSetMode.Create : BlockSetMode.Destroy, (byte)MaterialSlots[activematerial]);
+                               // right ? BlockSetMode.Create : BlockSetMode.Destroy, (byte)MaterialSlots[activematerial]);
                         }
                     }
                 }
@@ -2132,16 +2131,11 @@ namespace ManicDigger
                 fastclicking = true;
             }
         }
-        public const float RailHeight = 0.3f;
         float getblockheight(int x, int y, int z)
         {
             if (!MapUtil.IsValidPos(map, x, y, z))
             {
                 return 1;
-            }
-            if (data.GetRail(map.GetBlock(x, y, z)) != RailDirectionFlags.None)
-            {
-                return RailHeight;
             }
             if (map.GetBlock(x, y, z) == data.TileIdSingleStairs)
             {
@@ -3147,8 +3141,8 @@ namespace ManicDigger
             return (int)(Height / 2 - height / 2);
         }
         public int ChatScreenExpireTimeSeconds = 20;
-        public int ChatLinesMaxToDraw = 10;
-        public static int ChatFontSize = 10;
+        public int ChatLinesMaxToDraw = 11;
+        public static int ChatFontSize = 9;
         public static FontFamily ff;
         public static Font fn;
         public void DrawChatLines(bool all)
@@ -3157,7 +3151,7 @@ namespace ManicDigger
             {
                 pfc.AddFontFile("data/minecraftia.ttf");
                 ff = pfc.Families[0];
-                fn = new Font(ff, ChatFontSize, FontStyle.Regular);
+                fn = new Font(ff, ChatFontSize, FontStyle.Bold);
             }
             List<Chatline> chatlines2 = new List<Chatline>();
             if (!all)
@@ -3198,26 +3192,55 @@ namespace ManicDigger
             {
                // font.Options.Colour = Color.White;
                 //textdrawer.MakeTextTexture(new Text(){ text = chatlines2[i].text, fontsize=ChatFontSize, color = Color.White});
-                Draw2dText(chatlines2[i].text, 20, 90f + i * 25f, ChatFontSize, Color.White);
+                Draw2dText(chatlines2[i].text, 20, 180 + i * 25f, ChatFontSize, Color.White);
             }
             if (ChatPageScroll != 0)
             {
                 Draw2dText("Page: " + ChatPageScroll, 20, 90f + (-1) * 25f, ChatFontSize, Color.Gray);
             }
         }
-        static SizeF TextSize(string text, float fontsize)
+        public static SizeF TextSize(string text, float fontsize)
         {
             if (ff == null)
             {
                 pfc.AddFontFile("data/minecraftia.ttf");
                 ff = pfc.Families[0];
-                fn = new Font(ff, ChatFontSize, FontStyle.Regular);
+                fn = new Font(ff, ChatFontSize, FontStyle.Bold);
             }
             var font = new Font(ff.Name, fontsize);
             Bitmap bmp = new Bitmap(1, 1);
             Graphics g = Graphics.FromImage(bmp);
-            SizeF size = g.MeasureString(text, font);
+            SizeF size = g.MeasureString(StripColors(text), font);
             return size;
+        }
+        /// <summary> Strips all ampersand color codes and doubled-up ampersands. </summary>
+        public static string StripColors(string input)
+        {
+            if (input == null) throw new ArgumentNullException("input");
+            if (input.IndexOf('&') == -1)
+            {
+                return input;
+            }
+            else
+            {
+                StringBuilder output = new StringBuilder(input.Length);
+                for (int i = 0; i < input.Length; i++)
+                {
+                    if (input[i] == '&')
+                    {
+                        if (i == input.Length - 1)
+                        {
+                            break;
+                        }
+                        i++;
+                    }
+                    else
+                    {
+                        output.Append(input[i]);
+                    }
+                }
+                return output.ToString();
+            }
         }
         class CachedTexture
         {
@@ -3346,7 +3369,7 @@ namespace ManicDigger
             VertexPositionTexture[] vertices = new VertexPositionTexture[todraw.Count * 4];
             ushort[] indices = new ushort[todraw.Count * 4];
             ushort i=0;
-            todraw.ForEach(delegate(Draw2dData v)
+            foreach(Draw2dData v in todraw)
             {
                 RectangleF rect;
                 if (v.inAtlasId == null)
@@ -3369,7 +3392,7 @@ namespace ManicDigger
                 indices[i + 2] = (ushort)(i + 2);
                 indices[i + 3] = (ushort)(i + 3);
                 i += 4;
-            });
+            }
             GL.EnableClientState(ArrayCap.TextureCoordArray);
             GL.EnableClientState(ArrayCap.VertexArray);
             GL.EnableClientState(ArrayCap.ColorArray);

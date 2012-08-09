@@ -42,7 +42,6 @@ namespace ManicDigger
                 return 1;
             }
         }
-        public bool IsTorch() { return viewport.MaterialSlots[viewport.activematerial] == data.TileIdTorch; }
     }
     public class WeaponRenderer
     {
@@ -73,17 +72,9 @@ namespace ManicDigger
         bool build = false;
         public void DrawWeapon(float dt)
         {
-            int light;
-            if (info.IsTorch())
-            {
-                light = 255;
-            }
-            else
-            {
-                light = (int)(info.Light * 256);
+            int light = (int)(info.Light * 256);
                 if (light > 255) { light = 255; }
                 if (light < 0) { light = 0; }
-            }
             GL.Color3(Color.FromArgb(light, light, light));
             GL.BindTexture(TextureTarget.Texture2D, info.terrainTexture);
             List<ushort> myelements = new List<ushort>();
@@ -91,14 +82,9 @@ namespace ManicDigger
             int x = 0;
             int y = 0;
             int z = 0;
-            if (info.IsTorch())
-            {
-                blockdrawertorch.AddTorch(myelements, myvertices, x, y, z, TorchType.Normal);
-            }
-            else
-            {
+            
                 DrawCube(myelements, myvertices, x, y, z);
-            }
+            
             for (int i = 0; i < myvertices.Count; i++)
             {
                 var v = myvertices[i];

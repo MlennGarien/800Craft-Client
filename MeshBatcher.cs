@@ -31,10 +31,10 @@ namespace ManicDigger
         {
             if (lists != null)
             {
-                lists.ForEach(delegate(int l)
+                foreach (int l in lists)
                 {
                     GL.DeleteLists(l, listincrease);
-                });
+                }
             }
         }
         List<int> lists = new List<int>();

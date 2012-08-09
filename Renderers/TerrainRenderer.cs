@@ -139,61 +139,7 @@ namespace ManicDigger
         int GetLight(int globalx, int globaly, int globalz);
         float LightMaxValue();
     }
-    public enum RailSlope
-    {
-        Flat, TwoLeftRaised, TwoRightRaised, TwoUpRaised, TwoDownRaised
-    }
-    public class RailMapUtil
-    {
-        [Inject]
-        public ITerrainInfo mapstorage { get; set; }
-        [Inject]
-        public IGameData data { get; set; }
-        public RailSlope GetRailSlope(int x, int y, int z)
-        {
-            int tiletype = mapstorage.GetTerrainBlock(x, y, z);
-            RailDirectionFlags rail = data.GetRail(tiletype);
-            int blocknear;
-            if (x < mapstorage.MapSizeX - 1)
-            {
-                blocknear = mapstorage.GetTerrainBlock(x + 1, y, z);
-                if (rail == RailDirectionFlags.Horizontal &&
-                     blocknear != data.TileIdEmpty && data.GetRail(blocknear) == RailDirectionFlags.None)
-                {
-                    return RailSlope.TwoRightRaised;
-                }
-            }
-            if (x > 0)
-            {
-                blocknear = mapstorage.GetTerrainBlock(x - 1, y, z);
-                if (rail == RailDirectionFlags.Horizontal &&
-                     blocknear != data.TileIdEmpty && data.GetRail(blocknear) == RailDirectionFlags.None)
-                {
-                    return RailSlope.TwoLeftRaised;
-
-                }
-            }
-            if (y > 0)
-            {
-                blocknear = mapstorage.GetTerrainBlock(x, y - 1, z);
-                if (rail == RailDirectionFlags.Vertical &&
-                      blocknear != data.TileIdEmpty && data.GetRail(blocknear) == RailDirectionFlags.None)
-                {
-                    return RailSlope.TwoUpRaised;
-                }
-            }
-            if (y < mapstorage.MapSizeY - 1)
-            {
-                blocknear = mapstorage.GetTerrainBlock(x, y + 1, z);
-                if (rail == RailDirectionFlags.Vertical &&
-                      blocknear != data.TileIdEmpty && data.GetRail(blocknear) == RailDirectionFlags.None)
-                {
-                    return RailSlope.TwoDownRaised;
-                }
-            }
-            return RailSlope.Flat;
-        }
-    }
+    
     public interface IIsChunkReady
     {
         bool IsChunkReady(int x, int y, int z);
@@ -273,11 +219,11 @@ namespace ManicDigger
             {
                 terrainTexturesPerAtlas = atlas1dheight / (atlas2d.Width / atlas2dtiles);
                 List<Bitmap> atlases1d = new TextureAtlasConverter().Atlas2dInto1d(atlas2d, atlas2dtiles, atlas1dheight);
-                atlases1d.ForEach(delegate(Bitmap bmp)
+                foreach (Bitmap bmp in atlases1d)
                 {
                     terrainTextures1d.Add(the3d.LoadTexture(bmp));
                     bmp.Dispose();
-                });
+                }
             }
             this.terrainTextures1d = terrainTextures1d.ToArray();
             updateThreadRunning++;
@@ -340,14 +286,14 @@ namespace ManicDigger
                     localplayerpositioncache = localplayerposition.LocalPlayerPosition;
                     l.Sort(FTodo);
                     int max = 5;
-                    l.ForEach(delegate(TodoItem to)
+                    foreach(TodoItem to in l)
                     {
                         var ti = to;
                         if (!exit.exit || !exit2)
                         CheckRespawn();
                         ProcessAllPriorityTodos();
                         if (!ProcessUpdaterTodo(ti)) { max++; }
-                    });
+                    }
                 }
                 updateThreadRunning--;
             }
@@ -446,64 +392,67 @@ namespace ManicDigger
         private void ProcessAllPriorityTodos()
         {
             int done = 0;
-            while (prioritytodo.Count > 0)
+            lock (prioritytodo)
             {
-                done++;
-                if (done > MAX_PRIORITY_UPDATES)
+                while (prioritytodo.Count > 0)
                 {
-                    break;
-                }
-                if (exit.exit || exit2) { return; }
-                Vector3[] ti;
-                prioritytodo.Sort(FVector3Arr);
-                //todo remove duplicates
-                ti = prioritytodo[0];//.Dequeue();
-                prioritytodo.RemoveAt(0);
-                //Prepare list of near chunks to update.
-                //This is the slowest part.
-                Dictionary<Vector3, VerticesIndicesToLoad[]> nearchunksadd = new Dictionary<Vector3, VerticesIndicesToLoad[]>();
-                List<Vector3> nearchunksremove = new List<Vector3>();
-                foreach( Vector3 to in ti)
-                {
-                    var p = to;
-                    var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
-                    var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                    if (chunkk.Count() > 0)
+                    done++;
+                    if (done > MAX_PRIORITY_UPDATES)
                     {
-                        nearchunksadd.Add(p, chunkk.ToArray());
+                        break;
                     }
-                    if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
+                    if (exit.exit || exit2) { return; }
+                    Vector3[] ti;
+                    prioritytodo.Sort(FVector3Arr);
+                    //todo remove duplicates
+                    ti = prioritytodo[0];//.Dequeue();
+                    prioritytodo.RemoveAt(0);
+                    //Prepare list of near chunks to update.
+                    //This is the slowest part.
+                    Dictionary<Vector3, VerticesIndicesToLoad[]> nearchunksadd = new Dictionary<Vector3, VerticesIndicesToLoad[]>();
+                    List<Vector3> nearchunksremove = new List<Vector3>();
+                    foreach (Vector3 to in ti)
                     {
-                        nearchunksremove.Add(p);
-                    }
-                }
-                //Update all near chunks at the same time, for flicker-free drawing.
-                nearchunksremove.ForEach(delegate(Vector3 p)
-                {
-                    if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
-                    {
-                        //crash fix. crash happens on UpdateAllTiles().
-                    }
-                    int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
-                    if (b != null)
-                    {
-                        foreach (int id in b)
+                        var p = to;
+                        var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
+                        var chunkk = new List<VerticesIndicesToLoad>(chunk);
+                        if (chunkk.Count() > 0)
                         {
-                            batcher.Remove(id);
+                            nearchunksadd.Add(p, chunkk.ToArray());
+                        }
+                        if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
+                        {
+                            nearchunksremove.Add(p);
                         }
                     }
-                    batchedblocks.Remove(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z));
-                });
-                foreach (var k in nearchunksadd)
-                {
-                    var p = k.Key;
-                    var chunk = k.Value;
-                    List<int> ids = new List<int>();
-                    foreach (var cc in chunk)
+                    //Update all near chunks at the same time, for flicker-free drawing.
+                    foreach (Vector3 p in nearchunksremove)
                     {
-                        ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
+                        if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
+                        {
+                            //crash fix. crash happens on UpdateAllTiles().
+                        }
+                        int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
+                        if (b != null)
+                        {
+                            foreach (int id in b)
+                            {
+                                batcher.Remove(id);
+                            }
+                        }
+                        batchedblocks.Remove(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z));
                     }
-                    batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)] = new BlockData() { V = p, A = ids.ToArray() };
+                    foreach (var k in nearchunksadd)
+                    {
+                        var p = k.Key;
+                        var chunk = k.Value;
+                        List<int> ids = new List<int>();
+                        foreach (var cc in chunk)
+                        {
+                            ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
+                        }
+                        batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)] = new BlockData() { V = p, A = ids.ToArray() };
+                    }
                 }
             }
         }

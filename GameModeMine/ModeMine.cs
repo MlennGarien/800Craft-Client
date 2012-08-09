@@ -282,10 +282,8 @@ namespace ManicDigger
         {
             return tiletype == (int)TileTypeMinecraft.Water
                 || tiletype == (int)TileTypeMinecraft.StationaryWater
-                || tiletype == (int)TileTypeMinecraft.InfiniteWaterSource
                 || tiletype == (int)TileTypeMinecraft.Lava
-                || tiletype == (int)TileTypeMinecraft.StationaryLava
-                || tiletype == (int)TileTypeMinecraft.InfiniteLavaSource;
+                || tiletype == (int)TileTypeMinecraft.StationaryLava;
         }
         #endregion
         #region IGameData Members
@@ -377,43 +375,15 @@ namespace ManicDigger
             };//47
             data[(int)TileTypeMinecraft.MossyCobblestone] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 4 };//48
             data[(int)TileTypeMinecraft.Obsidian] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 5 };//49
-            //torch not in mine mode
-            //data[(int)TileTypeMinecraft.Torch] = new TileTypeData() { Buildable = true, AllTextures = (7 * 16) + 13 };//50
-            //fire todo
-            data[(int)TileTypeMinecraft.InfiniteWaterSource] = new TileTypeData() { Buildable = false, AllTextures = 14 };//52
-            data[(int)TileTypeMinecraft.InfiniteLavaSource] = new TileTypeData() { Buildable = false, AllTextures = 30 };//53
-            data[(int)TileTypeMinecraft.Chest] = new TileTypeData() { Buildable = false, AllTextures = 4 };//54
-            //gear todo
-            //diamond todo
-            //diamond block todo
-            //crafting table todo
-            //crops todo
-            //soil todo
-            //furnace todo
-            //burning furnace todo
+            
         }
         TileTypeData[] data = new TileTypeData[256];
-        /*
-            if (blockUp == 0 || blockUp == 8 || blockUp == 9 ||
-                blockUp == 10 || blockUp == 11 || blockUp == 18 ||
-                blockUp == 44 || blockUp == 6 || blockUp == 37 ||
-                blockUp == 38 || blockUp == 39 || blockUp == 40 ||
-                blockLeft == 0 || blockLeft == 8 || blockLeft == 9 ||
-                blockLeft == 10 || blockLeft == 11 || blockLeft == 18 ||
-                blockLeft == 44 || blockLeft == 6 || blockLeft == 37 ||
-                blockLeft == 38 || blockLeft == 39 || blockLeft == 40 ||
-                blockRight == 0 || blockRight == 8 || blockRight == 9 ||
-                blockRight == 10 || blockRight == 11 || blockRight == 18 ||
-                blockRight == 44 || blockRight == 6 || blockRight == 37 ||
-                blockRight == 38 || blockRight == 39 || blockRight == 40)
-                Blend(block);
-        */
+        
         public bool IsTransparentTile(int tileType)
         {
             return
                 tileType == (byte)TileTypeMinecraft.Empty
                 || tileType == (byte)TileTypeMinecraft.Sapling
-                || tileType == (byte)TileTypeMinecraft.Crops
                 //|| tileType == (byte)TileTypeMinecraft.Water
                 //|| tileType == (byte)TileTypeMinecraft.StationaryWater
                 //|| tileType == (byte)TileTypeMinecraft.Lava
@@ -424,9 +394,7 @@ namespace ManicDigger
                 || tileType == (byte)TileTypeMinecraft.Glass
                 || tileType == (byte)TileTypeMinecraft.RedMushroom
                 || tileType == (byte)TileTypeMinecraft.BrownMushroom
-                || tileType == (byte)TileTypeMinecraft.Stair // transparent on side
-                || tileType == (byte)TileTypeMinecraft.InfiniteWaterSource
-                || tileType == (byte)TileTypeMinecraft.Torch;
+                || tileType == (byte)TileTypeMinecraft.Stair;// transparent on side
         }
         public bool IsTransparentTileTexture(int tileType)
         {
@@ -455,12 +423,7 @@ namespace ManicDigger
                 || tiletype == (int)TileTypeMinecraft.BrownMushroom;
         }
         #endregion
-        #region IGameData Members
-        public RailDirectionFlags GetRail(int tiletype)
-        {
-            return RailDirectionFlags.None;
-        }
-        #endregion
+        
         #region IGameData Members
         public int TileIdSingleStairs
         {
@@ -489,7 +452,6 @@ namespace ManicDigger
         public bool IsEmptyForPhysics(int blocktype)
         {
             return blocktype == (int)TileTypeMinecraft.BrownMushroom
-                || blocktype == (int)TileTypeMinecraft.Crops
                 || blocktype == (int)TileTypeMinecraft.RedMushroom
                 || blocktype == (int)TileTypeMinecraft.RedRoseDecorations
                 || blocktype == (int)TileTypeMinecraft.Sapling
@@ -540,26 +502,19 @@ namespace ManicDigger
         public bool IsLightEmitting(int blocktype)
         {
             return blocktype == (int)TileTypeMinecraft.GoldBlock
-                || blocktype == (int)TileTypeMinecraft.Torch
                 || blocktype == (int)TileTypeMinecraft.Lava
-                || blocktype == (int)TileTypeMinecraft.StationaryLava
-                || blocktype == (int)TileTypeMinecraft.InfiniteLavaSource;
+                || blocktype == (int)TileTypeMinecraft.StationaryLava;
         }
         #endregion
-        #region IGameData Members
-        public byte TileIdTorch { get { return (int)TileTypeMinecraft.Torch; } }
-        #endregion
+        
         #region IGameData Members
         public int GetLightRadius(int blocktype)
         {
             switch (blocktype)
             {
-                case (int)TileTypeMinecraft.Torch:
-                    return 10;
                 case (int)TileTypeMinecraft.GoldBlock:
                 case (int)TileTypeMinecraft.Lava:
                 case (int)TileTypeMinecraft.StationaryLava:
-                case (int)TileTypeMinecraft.InfiniteLavaSource:
                     return 10;
                 default:
                     return 0;
@@ -626,19 +581,6 @@ namespace ManicDigger
         TNT,
         Bookcase,
         MossyCobblestone,
-        Obsidian,
-        Torch,
-        FireBlock,
-        InfiniteWaterSource,
-        InfiniteLavaSource,
-        Chest,
-        Gear,
-        DiamondPre,
-        DiamondBlock,
-        CraftingTable,
-        Crops,
-        Soil,
-        Furnace,
-        BurningFurnace,
+        Obsidian
     }
 }

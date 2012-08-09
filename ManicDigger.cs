@@ -535,7 +535,6 @@ namespace ManicDigger
         bool IsTransparentTile(int tiletype);
         int PlayerBuildableMaterialType(int p);
         bool IsBlockFlower(int tiletype);
-        RailDirectionFlags GetRail(int tiletype);
         string BlockName(int blocktype);
         bool IsEmptyForPhysics(int blocktype);
         float BlockWalkSpeed(int blocktype);
@@ -543,7 +542,6 @@ namespace ManicDigger
         bool IsSlipperyWalk(int blocktype);
         string[] WalkSound(int blocktype);
         int TileIdTrampoline { get; }
-        byte TileIdTorch { get; }
         int GetLightRadius(int blocktype);
         bool IsTransparentTileFully(byte blocktype);
     }
@@ -599,12 +597,7 @@ namespace ManicDigger
             return false;
         }
         #endregion
-        #region IGameData Members
-        public RailDirectionFlags GetRail(int tiletype)
-        {
-            return RailDirectionFlags.None;
-        }
-        #endregion
+        
         #region IGameData Members
         public int TileIdSingleStairs { get; set; }
         #endregion
@@ -659,12 +652,7 @@ namespace ManicDigger
             get { throw new NotImplementedException(); }
         }
         #endregion
-        #region IGameData Members
-        public byte TileIdTorch
-        {
-            get { throw new NotImplementedException(); }
-        }
-        #endregion
+       
         #region IGameData Members
         public int GetLightRadius(int blocktype)
         {

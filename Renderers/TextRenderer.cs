@@ -60,13 +60,13 @@ namespace ManicDigger
                 }
             }
             SizeF size2 = new SizeF(NextPowerOfTwo((uint)totalwidth), NextPowerOfTwo((uint)totalheight));
-            Bitmap bmp2 = new Bitmap((int)size2.Width + 100, (int)size2.Height);
+            Bitmap bmp2 = new Bitmap((int)size2.Width, (int)size2.Height);
             using (Graphics g2 = Graphics.FromImage(bmp2))
             {
                 float currentwidth = 0;
                 for (int i = 0; i < parts.Count; i++)
                 {
-                    parts[i].text = parts[i].text.Trim();
+                    parts[i].text = parts[i].text;
                     SizeF sizei = g2.MeasureString(parts[i].text, font);
                     if (sizei.Width == 0 || sizei.Height == 0)
                     {
@@ -74,7 +74,7 @@ namespace ManicDigger
                     }
                     // g2.FillRectangle(new SolidBrush(Color.Black), currentwidth, 0, sizei.Width, sizei.Height);
                     g2.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                    g2.DrawString(parts[i].text, ManicDiggerGameWindow.fn, new SolidBrush(Color.Black), currentwidth + 1.3f, 1.3f);
+                    g2.DrawString(parts[i].text, font, new SolidBrush(Color.Black), currentwidth + 2f, 2f);
                     g2.DrawString(parts[i].text, font, new SolidBrush(parts[i].color.ToColor()), currentwidth, 0);
 
                     currentwidth += sizei.Width;
@@ -114,6 +114,7 @@ namespace ManicDigger
                     {
                         parts.Add(new TextPart() { text = currenttext, color = currentcolor });
                     }
+                    currenttext = "";
                     break;
                 }
                 if (s[i] == '&')
@@ -127,7 +128,7 @@ namespace ManicDigger
                             {
                                 parts.Add(new TextPart() { text = currenttext, color = currentcolor });
                             }
-                            currenttext = null;
+                            currenttext = "";
                             currentcolor = GetColor(color.Value);
                             i++;
                             goto next;

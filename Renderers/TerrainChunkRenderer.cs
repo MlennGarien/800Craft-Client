@@ -19,7 +19,6 @@ namespace ManicDigger
         public Config3d config3d { get; set; }
         [Inject]
         public ITerrainRenderer terrainrenderer { get; set; }//textures
-        RailMapUtil railmaputil;
         public bool DONOTDRAWEDGES = true;
         public int chunksize = 16; //16x16
         public int texturesPacked = 16;
