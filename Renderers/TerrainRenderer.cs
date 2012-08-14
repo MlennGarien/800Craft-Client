@@ -265,34 +265,47 @@ namespace ManicDigger
             {
                 throw new Exception("Update thread is running already.");
             }
+            DoTasks();
+        }
+
+        void DoTasks()
+        {
+            bool done = true;
             for (; ; )
             {
-                Thread.Sleep(1);
-                if (exit.exit || exit2) { break; }
-                CheckRespawn();
-                Point playerpoint = new Point((int)(localplayerposition.LocalPlayerPosition.X / chunksize), (int)(localplayerposition.LocalPlayerPosition.Z / chunksize));
-                ProcessAllPriorityTodos();
-                List<TodoItem> l = new List<TodoItem>();
-                lock (terrainlock)
+                if (done)
                 {
-                    FindChunksToDelete(l);
-                    FindChunksToAdd(l);
-                }
-                //without local cache, sort could crash when player moves during sort.
-                localplayerpositioncache = localplayerposition.LocalPlayerPosition;
-                l.Sort(FTodo);
-                int max = 5;
-                for (int i = 0; i < Math.Min(max, l.Count); i++)//l.Count; i++)
-                {
-                    var ti = l[i];
+                    done = false;
                     if (exit.exit || exit2) { break; }
                     CheckRespawn();
+                    Point playerpoint = new Point((int)(localplayerposition.LocalPlayerPosition.X / chunksize), (int)(localplayerposition.LocalPlayerPosition.Z / chunksize));
                     ProcessAllPriorityTodos();
-                    if (!ProcessUpdaterTodo(ti)) { max++; }
+                    List<TodoItem> l = new List<TodoItem>();
+                    lock (terrainlock)
+                    {
+                        FindChunksToDelete(l);
+                        FindChunksToAdd(l);
+                    }
+                    //without local cache, sort could crash when player moves during sort.
+                    localplayerpositioncache = localplayerposition.LocalPlayerPosition;
+                    l.Sort(FTodo);
+                    int max = 5;
+                    for (int i = 0; i < Math.Min(max, l.Count); i++)//l.Count; i++)
+                    {
+                        var ti = l[i];
+                        if (exit.exit || exit2) { break; }
+                        CheckRespawn();
+                        ProcessAllPriorityTodos();
+                        if (!ProcessUpdaterTodo(ti)) { max++; }
+                    }
+                    l.Clear();
+                    done = true;
                 }
             }
-            updateThreadRunning--;
         }
+           
+    
+        
         private void FindChunksToDelete(List<TodoItem> l)
         {
             foreach (var k in batchedblocks.Values)

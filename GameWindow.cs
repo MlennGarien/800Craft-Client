@@ -1743,7 +1743,15 @@ namespace ManicDigger
                     };
                 }
             }
-            float jumpstartacceleration = 2.1f * physics.gravity;
+            float jumpstartacceleration;
+            if (movespeednow > 5f)
+            {
+                jumpstartacceleration = 2.4f * physics.gravity * 1.75f;
+            }
+            else
+            {
+                jumpstartacceleration = 2.4f * physics.gravity;
+            }
             if (blockunderplayer != null && blockunderplayer == data.TileIdTrampoline
                 && (!player.isplayeronground))
             {

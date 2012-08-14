@@ -11,7 +11,7 @@ namespace ManicDigger
     public class UpdateChecker
     {
         public static int Version = 102;
-        public static decimal ClientVersion = Math.Round((decimal)Version / 100, 2);
+        public static decimal ClientVersion = (decimal)Version / 100;
         public static int WebVersion = 0;
         public static string DownloadLocation = null;
         public static void UpdateCheck()
