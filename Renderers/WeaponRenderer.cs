@@ -47,8 +47,6 @@ namespace ManicDigger
     {
         [Inject]
         public WeaponBlockInfo info { get; set; }
-        [Inject]
-        public IBlockDrawerTorch blockdrawertorch { get; set; }
         //[Inject]
         //public IKeyboard keyboard { get; set; }
         [Inject]

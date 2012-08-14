@@ -9,6 +9,53 @@ using OpenTK;
 
 namespace ManicDigger
 {
+    public class FastQueue<T>
+    {
+        public void Initialize(int maxCount)
+        {
+            this.maxCount = maxCount;
+            values = new T[maxCount];
+            Count = 0;
+            start = 0;
+            end = 0;
+        }
+        int maxCount;
+        T[] values;
+        public int Count;
+        int start;
+        int end;
+        public void Push(T value)
+        {
+            /*
+            if (Count >= values.Length)
+            {
+                Array.Resize(ref values, values.Length * 2);
+            }
+            */
+            values[end] = value;
+            Count++;
+            end++;
+            if (end >= maxCount)
+            {
+                end = 0;
+            }
+        }
+        public T Pop()
+        {
+            T value = values[start];
+            Count--;
+            start++;
+            if (start >= maxCount)
+            {
+                start = 0;
+            }
+            return value;
+        }
+        public void Clear()
+        {
+            Count = 0;
+        }
+    }
     public struct FastColor
     {
         public FastColor(byte A, byte R, byte G, byte B)
@@ -111,11 +158,7 @@ namespace ManicDigger
             {
                 if (gameversion == null)
                 {
-                    gameversion = "unknown";
-                    if (File.Exists("version.txt"))
-                    {
-                        gameversion = File.ReadAllText("version.txt");
-                    }
+                    gameversion = ManicDigger.UpdateChecker.ClientVersion.ToString();
                 }
                 return gameversion;
             }

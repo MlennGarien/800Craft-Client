@@ -18,7 +18,7 @@ using ManicDigger.Renderers;
 
 namespace ManicDigger
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 12)]
     public struct VertexPositionTexture
     {
         public Vector3 Position;
@@ -62,18 +62,17 @@ namespace ManicDigger
         public int texture;
         public float radius;
         public Vector3 center;
-        public bool wasrendered = true;
+        public bool wasrendered = false;
         public int indicesCount;
         public int verticesCount;
     }
     public class Config3d
     {
-        public bool ENABLE_BACKFACECULLING = true;
+        public bool ENABLE_BACKFACECULLING = false;
         public bool ENABLE_TRANSPARENCY = true;
         public bool ENABLE_MIPMAPS = false;
         public bool ENABLE_VSYNC = false;
-        public bool ENABLE_VISIBILITY_CULLING = true;
-        public float viewdistance = 256;
+        public float viewdistance = 512;
     }
     public interface IThe3d
     {
@@ -1662,7 +1661,7 @@ namespace ManicDigger
             }
             bool wantsjump = GuiTyping == TypingState.None && Keyboard[OpenTK.Input.Key.Space];
             int movedx = 0;
-            int movedy = 0;
+            float movedy = 0;
             bool moveup = false;
             if (guistate == GuiState.Normal)
             {
@@ -1682,7 +1681,8 @@ namespace ManicDigger
                         overheadcameraK.Move(m, (float)e.Time);
                         if ((player.playerposition - playerdestination).Length >= 1f)
                         {
-                            movedy += 1;
+                                movedy += 1.5f;
+                            
                             if (physics.reachedwall)
                             {
                                 wantsjump = true;
@@ -1764,7 +1764,7 @@ namespace ManicDigger
                 wantsjump = wantsjump,
             };
             bool soundnow;
-            physics.Move(player, move, e.Time, out soundnow);
+            physics.Move(player, move, e.Time, out soundnow, new Vector3());
             if (soundnow)
             {
                 UpdateWalkSound(-1);
@@ -1822,11 +1822,27 @@ namespace ManicDigger
             {
                 //walk faster on cobblestone
                 int? blockunderplayer = BlockUnderPlayer();
+                int? blockplayerlegs = BlockPlayerLegs();
                 if (blockunderplayer != null)
                 {
                     movespeednow *= data.BlockWalkSpeed(blockunderplayer.Value);
                 }
+                //swim, but walk slow when in water
+                if (blockplayerlegs != null)
+                {
+                    if (data.IsWaterTile(blockplayerlegs.Value))
+                    {
+                        if (blockunderplayer != null)
+                        {
+                            if (!data.IsWaterTile(blockunderplayer.Value))
+                            {
+                                movespeednow *= 0.4f;
+                            }
+                        }
+                    }
+                }
             }
+
             if (Keyboard[OpenTK.Input.Key.ShiftLeft])
             {
                 movespeednow *= 12f;
@@ -1850,6 +1866,17 @@ namespace ManicDigger
             }
             int blockunderplayer = map.GetBlock((int)player.playerposition.X,
                 (int)player.playerposition.Z, (int)player.playerposition.Y - 1);
+            return blockunderplayer;
+        }
+        int? BlockPlayerLegs()
+        {
+            if (!MapUtil.IsValidPos(map, (int)player.playerposition.X,
+                 (int)player.playerposition.Z, (int)player.playerposition.Y))
+            {
+                return null;
+            }
+            int blockunderplayer = map.GetBlock((int)player.playerposition.X,
+                (int)player.playerposition.Z, (int)player.playerposition.Y);
             return blockunderplayer;
         }
         Vector3 playerdestination;
@@ -3192,7 +3219,7 @@ namespace ManicDigger
             {
                // font.Options.Colour = Color.White;
                 //textdrawer.MakeTextTexture(new Text(){ text = chatlines2[i].text, fontsize=ChatFontSize, color = Color.White});
-                Draw2dText(chatlines2[i].text, 20, 180 + i * 25f, ChatFontSize, Color.White);
+                Draw2dText(chatlines2[i].text, 20, 160 + i * 25f, ChatFontSize, Color.White);
             }
             if (ChatPageScroll != 0)
             {
@@ -3594,7 +3621,7 @@ namespace ManicDigger
             }
         }
         bool titleset = false;
-        string applicationname = "800Craft Client";
+        string applicationname = "800Craft Client - " + GameVersion.Version;
         #region ILocalPlayerPosition Members
         public Vector3 LocalPlayerPosition { get { return player.playerposition; } set { player.playerposition = value; } }
         public Vector3 LocalPlayerOrientation { get { return player.playerorientation; } set { player.playerorientation = value; } }

@@ -15,9 +15,10 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\Start.
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\ManicDigger.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\OpenTK.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\ManicDigger.pdb
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\OpenTK.xml
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.csprojResolveAssemblyReference.cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\ManicDigger.ServerSelector.resources
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.csproj.GenerateResource.Cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.pdb
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\OpenTK.xml
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.Properties.Resources.resources

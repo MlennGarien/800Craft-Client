@@ -132,6 +132,10 @@ namespace ManicDigger
             int h = index / (sizex * sizey);
             return new Vector3i(x, y, h);
         }
+        public static int Index2d(int x, int y, int sizex)
+        {
+            return x + y * sizex;
+        }
         public static int Index(int x, int y, int h, int sizex, int sizey)
         {
             return (h * sizey + y) * sizex + x;

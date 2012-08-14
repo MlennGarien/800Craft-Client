@@ -22,7 +22,6 @@ namespace ManicDigger
         void Draw();
         void UpdateAllTiles();
         void UpdateTile(int x, int y, int z);
-        TerrainChunkRenderer renderer { get; }
         int TrianglesCount();
         int texturesPacked { get; }
         int terrainTexture { get; }
@@ -57,7 +56,6 @@ namespace ManicDigger
         #region ITerrainDrawer Members
         public int ChunkUpdates { get; set; }
         #endregion
-        public TerrainChunkRenderer renderer { get; set; }
         #region ITerrainRenderer Members
         public int[] terrainTextures1d { get; set; }
         public int terrainTexturesPerAtlas { get; set; }
@@ -139,7 +137,6 @@ namespace ManicDigger
         int GetLight(int globalx, int globaly, int globalz);
         float LightMaxValue();
     }
-    
     public interface IIsChunkReady
     {
         bool IsChunkReady(int x, int y, int z);
@@ -178,6 +175,7 @@ namespace ManicDigger
         public ILocalPlayerPosition localplayerposition { get; set; }
         [Inject]
         public IWorldFeaturesDrawer worldfeatures { get; set; }
+        [Inject]
         public TerrainChunkRenderer terrainchunkdrawer { get; set; }
         public event EventHandler<ExceptionEventArgs> OnCrash;
 
@@ -185,7 +183,7 @@ namespace ManicDigger
         public bool DONOTDRAWEDGES = true;
         public int texturesPacked { get { return 16; } } //16x16
         public int terrainTexture { get; set; }
-        public Bitmap texturebmp;
+
         public int chunkdrawdistance
         {
             get
@@ -275,28 +273,25 @@ namespace ManicDigger
                 Point playerpoint = new Point((int)(localplayerposition.LocalPlayerPosition.X / chunksize), (int)(localplayerposition.LocalPlayerPosition.Z / chunksize));
                 ProcessAllPriorityTodos();
                 List<TodoItem> l = new List<TodoItem>();
-                lock (l)
+                lock (terrainlock)
                 {
-                    lock (terrainlock)
-                    {
-                        FindChunksToDelete(l);
-                        FindChunksToAdd(l);
-                    }
-                    //without local cache, sort could crash when player moves during sort.
-                    localplayerpositioncache = localplayerposition.LocalPlayerPosition;
-                    l.Sort(FTodo);
-                    int max = 5;
-                    foreach(TodoItem to in l)
-                    {
-                        var ti = to;
-                        if (!exit.exit || !exit2)
-                        CheckRespawn();
-                        ProcessAllPriorityTodos();
-                        if (!ProcessUpdaterTodo(ti)) { max++; }
-                    }
+                    FindChunksToDelete(l);
+                    FindChunksToAdd(l);
                 }
-                updateThreadRunning--;
+                //without local cache, sort could crash when player moves during sort.
+                localplayerpositioncache = localplayerposition.LocalPlayerPosition;
+                l.Sort(FTodo);
+                int max = 5;
+                for (int i = 0; i < Math.Min(max, l.Count); i++)//l.Count; i++)
+                {
+                    var ti = l[i];
+                    if (exit.exit || exit2) { break; }
+                    CheckRespawn();
+                    ProcessAllPriorityTodos();
+                    if (!ProcessUpdaterTodo(ti)) { max++; }
+                }
             }
+            updateThreadRunning--;
         }
         private void FindChunksToDelete(List<TodoItem> l)
         {
@@ -392,45 +387,49 @@ namespace ManicDigger
         private void ProcessAllPriorityTodos()
         {
             int done = 0;
-            lock (prioritytodo)
+            while (prioritytodo.Count > 0)
             {
-                while (prioritytodo.Count > 0)
+                done++;
+                if (done > MAX_PRIORITY_UPDATES)
                 {
-                    done++;
-                    if (done > MAX_PRIORITY_UPDATES)
-                    {
-                        break;
-                    }
-                    if (exit.exit || exit2) { return; }
-                    Vector3[] ti;
+                    break;
+                }
+                if (exit.exit || exit2) { return; }
+                Vector3[] ti;
+                lock (prioritytodo)
+                {
                     prioritytodo.Sort(FVector3Arr);
                     //todo remove duplicates
                     ti = prioritytodo[0];//.Dequeue();
                     prioritytodo.RemoveAt(0);
-                    //Prepare list of near chunks to update.
-                    //This is the slowest part.
-                    Dictionary<Vector3, VerticesIndicesToLoad[]> nearchunksadd = new Dictionary<Vector3, VerticesIndicesToLoad[]>();
-                    List<Vector3> nearchunksremove = new List<Vector3>();
-                    foreach (Vector3 to in ti)
+                }
+                //Prepare list of near chunks to update.
+                //This is the slowest part.
+                Dictionary<Vector3, VerticesIndicesToLoad[]> nearchunksadd = new Dictionary<Vector3, VerticesIndicesToLoad[]>();
+                List<Vector3> nearchunksremove = new List<Vector3>();
+                for (int i = 0; i < ti.Length; i++)
+                {
+                    var p = ti[i];
+                    var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
+                    var chunkk = new List<VerticesIndicesToLoad>(chunk);
+                    if (chunk.Count() > 0)
                     {
-                        var p = to;
-                        var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
-                        var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                        if (chunkk.Count() > 0)
-                        {
-                            nearchunksadd.Add(p, chunkk.ToArray());
-                        }
-                        if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
-                        {
-                            nearchunksremove.Add(p);
-                        }
+                        nearchunksadd.Add(p, chunk.ToArray());
                     }
-                    //Update all near chunks at the same time, for flicker-free drawing.
+                    if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
+                    {
+                        nearchunksremove.Add(p);
+                    }
+                }
+                //Update all near chunks at the same time, for flicker-free drawing.
+                lock (terrainlock)
+                {
                     foreach (Vector3 p in nearchunksremove)
                     {
                         if (!batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
                         {
                             //crash fix. crash happens on UpdateAllTiles().
+                            continue;
                         }
                         int[] b = batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)].A;
                         if (b != null)
@@ -456,7 +455,6 @@ namespace ManicDigger
                 }
             }
         }
-        
         private bool ProcessUpdaterTodo(TodoItem ti)
         {
             var p = ti.position;
@@ -467,6 +465,8 @@ namespace ManicDigger
                 {
                     try
                     {
+                        //lock (terrainlock)
+                        {
                             if (batchedblocks.ContainsKey(GetV3HashCode(p.X, p.Y, z)))
                             {
                                 continue;
@@ -476,7 +476,7 @@ namespace ManicDigger
                                 continue;
                             }
                             processed = true;
-                            IEnumerable< VerticesIndicesToLoad> chunk = MakeChunk(p.X, p.Y, z);
+                            var chunk = MakeChunk(p.X, p.Y, z);
                             //var chunkk = new List<VerticesIndicesToLoad>(chunk);
                             List<int> ids = new List<int>();
                             foreach (VerticesIndicesToLoad v in chunk)
@@ -494,6 +494,7 @@ namespace ManicDigger
                             {
                                 batchedblocks[GetV3HashCode(p.X, p.Y, z)] = new BlockData();
                             }
+                        }
                     }
                     catch { Console.WriteLine("Chunk error"); }
                 }
@@ -617,6 +618,7 @@ namespace ManicDigger
             return (int)(0xE75C6973 * (uint)i + 0xC965737D * (uint)j + 0x7EC976D5 * (uint)k);
         }
 
+        Vector3 lastplayerposition;
         MeshBatcher batcher = new MeshBatcher();
         public void UpdateAllTiles()
         {
@@ -631,6 +633,11 @@ namespace ManicDigger
         {
             Add,
             Delete,
+        }
+        struct ToUpdate
+        {
+            public UpdateType type;
+            public Vector3 position;
         }
         IEnumerable<Vector3> TilesAround(Vector3 pos)
         {
@@ -653,39 +660,29 @@ namespace ManicDigger
             }
             return false;
         }
-        public TerrainChunkRenderer renderer
-        {
-            get
-            {
-                return terrainchunkdrawer;
-            }
-        }
         public void UpdateTile(int xx, int yy, int zz)
         {
-            lock (terrainlock)
+            List<Vector3> l = new List<Vector3>();
+            lock (prioritytodo)
             {
-                List<Vector3> l = new List<Vector3>();
-                lock (prioritytodo)
+                if (!IsChunkLoaded(xx / chunksize, yy / chunksize))
                 {
-                    if (!IsChunkLoaded(xx / chunksize, yy / chunksize))
-                    {
-                        return;
-                    }
-                    l.Add(new Vector3(xx / chunksize, yy / chunksize, zz / chunksize));
-                    foreach (Vector3 t in TilesAround(new Vector3(xx, yy, zz)))
-                    {
-                        int x = (int)t.X;
-                        int y = (int)t.Y;
-                        int z = (int)t.Z;
-                        if (x / chunksize != xx / chunksize
-                            || y / chunksize != yy / chunksize
-                            || z / chunksize != zz / chunksize)
-                        {
-                            l.Add(new Vector3(x / chunksize, y / chunksize, z / chunksize));
-                        }
-                    }
-                    prioritytodo.Add(l.ToArray());
+                    return;
                 }
+                l.Add(new Vector3(xx / chunksize, yy / chunksize, zz / chunksize));
+                foreach (Vector3 t in TilesAround(new Vector3(xx, yy, zz)))
+                {
+                    int x = (int)t.X;
+                    int y = (int)t.Y;
+                    int z = (int)t.Z;
+                    if (x / chunksize != xx / chunksize
+                        || y / chunksize != yy / chunksize
+                        || z / chunksize != zz / chunksize)
+                    {
+                        l.Add(new Vector3(x / chunksize, y / chunksize, z / chunksize));
+                    }
+                }
+                prioritytodo.Add(l.ToArray());
             }
         }
         public int TrianglesCount()

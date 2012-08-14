@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using OpenTK;
-using ManicDigger.Collisions;
 using System.Drawing;
+using ManicDigger.Collisions;
 
 namespace ManicDigger
 {
@@ -14,8 +14,6 @@ namespace ManicDigger
         [Inject]
         public IGameData data { get; set; }
         [Inject]
-        public IBlockDrawerTorch blockdrawertorch { get; set; }
-        [Inject]
         public Config3d config3d { get; set; }
         [Inject]
         public ITerrainRenderer terrainrenderer { get; set; }//textures
@@ -25,7 +23,6 @@ namespace ManicDigger
         public float BlockShadow = 0.6f;
         public bool ENABLE_ATLAS1D = true;
         int maxblocktypes = 256;
-        byte[, ,] currentChunkDraw;
         public IEnumerable<VerticesIndicesToLoad> MakeChunk(int x, int y, int z)
         {
             if (x < 0 || y < 0 || z < 0) { yield break; }
@@ -65,7 +62,6 @@ namespace ManicDigger
                     }
                 }
             }
-
             currentChunkShadows = new float[chunksize + 2, chunksize + 2, chunksize + 2];
             currentChunkIgnore = new bool[chunksize, chunksize, chunksize, 6];
             for (int xx = 0; xx < chunksize + 2; xx++)
@@ -78,10 +74,20 @@ namespace ManicDigger
                     }
                 }
             }
-            currentChunkDraw = currentChunk;
-            CalculateBlockPolygons(x, y, z);
 
-            //BlockPolygons(xxx, yyy, zzz, currentChunk);
+            for (int xx = 0; xx < chunksize; xx++)
+            {
+                for (int yy = 0; yy < chunksize; yy++)
+                {
+                    for (int zz = 0; zz < chunksize; zz++)
+                    {
+                        int xxx = x * chunksize + xx;
+                        int yyy = y * chunksize + yy;
+                        int zzz = z * chunksize + zz;
+                        BlockPolygons(xxx, yyy, zzz, currentChunk);
+                    }
+                }
+            }
             if (ENABLE_ATLAS1D)
             {
                 for (int i = 0; i < toreturnatlas1d.Length; i++)
@@ -141,26 +147,6 @@ namespace ManicDigger
                 }
             }
         }
-        private void CalculateBlockPolygons(int x, int y, int z)
-        {
-            for (int xx = 0; xx < chunksize; xx++)
-            {
-                for (int yy = 0; yy < chunksize; yy++)
-                {
-                    for (int zz = 0; zz < chunksize; zz++)
-                    {
-                        int xxx = x * chunksize + xx;
-                        int yyy = y * chunksize + yy;
-                        int zzz = z * chunksize + zz;
-                        //Most blocks aren't rendered at all, quickly reject them.
-                        if (currentChunkDraw[xx, yy, zz] > 1 || currentChunkDraw[xx,yy,zz] < 50)
-                        {
-                            BlockPolygons(xxx, yyy, zzz, currentChunkDraw);
-                        }
-                    }
-                }
-            }
-        }
         VerticesIndices toreturnmain;
         VerticesIndices toreturntransparent;
         VerticesIndices[] toreturnatlas1d;
@@ -206,10 +192,10 @@ namespace ManicDigger
                 return;
             }
             FastColor color = mapstorage.GetTerrainBlockColor(x, y, z);
-            FastColor colorShadowSide = new FastColor(color.A,
+            FastColor colorShadowSide = new FastColor(Color.FromArgb(color.A,
                 (int)(color.R * BlockShadow),
                 (int)(color.G * BlockShadow),
-                (int)(color.B * BlockShadow));
+                (int)(color.B * BlockShadow)));
             if (DONOTDRAWEDGES)
             {
                 //if the game is fillrate limited, then this makes it much faster.
@@ -228,21 +214,17 @@ namespace ManicDigger
                 drawbottom = false;
                 flowerfix = 0.5f;
             }
-           
-            float blockheight = 1;//= data.GetTerrainBlockHeight(tiletype);
-            
+            float blockheight = 1;
             if (tt == data.TileIdSingleStairs)
             {
                 blockheight = 0.5f;
             }
             
-            //slope
+            FastColor curcolor = color;
             float blockheight00 = blockheight;
             float blockheight01 = blockheight;
             float blockheight10 = blockheight;
             float blockheight11 = blockheight;
-            
-            FastColor curcolor = color;
             //top
             if (drawtop)
             {
@@ -250,10 +232,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy, zz + 1, x, y, z + 1);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(color.A,
+                    curcolor = new FastColor(Color.FromArgb(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
-                        (int)(color.B * shadowratio));
+                        (int)(color.B * shadowratio)));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Top);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Top);
@@ -278,10 +260,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy, zz - 1, x, y, z - 1);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(color.A,
+                    curcolor = new FastColor(Color.FromArgb(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
-                        (int)(Math.Min(curcolor.B, color.B * shadowratio)));
+                        (int)(Math.Min(curcolor.B, color.B * shadowratio))));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Bottom);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Bottom);
@@ -306,10 +288,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx - 1, yy, zz, x - 1, y, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(color.A,
+                    curcolor = new FastColor(Color.FromArgb(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
-                        (int)(color.B * shadowratio));
+                        (int)(color.B * shadowratio)));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Front);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Front);
@@ -334,10 +316,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx + 1, yy, zz, x + 1, y, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(color.A,
+                    curcolor = new FastColor(Color.FromArgb(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
-                        (int)(color.B * shadowratio));
+                        (int)(color.B * shadowratio)));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Back);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Back);
@@ -361,10 +343,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy - 1, zz, x, y - 1, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(color.A,
+                    curcolor = new FastColor(Color.FromArgb(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
-                        (int)(Math.Min(curcolor.B, color.B * shadowratio)));
+                        (int)(Math.Min(curcolor.B, color.B * shadowratio))));
                 }
 
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Left);
@@ -390,10 +372,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy + 1, zz, x, y + 1, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(color.A,
+                    curcolor = new FastColor(Color.FromArgb(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
-                        (int)(Math.Min(curcolor.B, color.B * shadowratio)));
+                        (int)(Math.Min(curcolor.B, color.B * shadowratio))));
                 }
 
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Right);
@@ -513,6 +495,10 @@ namespace ManicDigger
                 }
             }
             return currentChunkShadows[xx, yy, zz];
+        }
+        private bool CanSupportTorch(byte blocktype)
+        {
+            return blocktype != data.TileIdEmpty;
         }
     }
 }

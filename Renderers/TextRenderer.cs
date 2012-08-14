@@ -44,19 +44,16 @@ namespace ManicDigger
             List<SizeF> sizes = new List<SizeF>();
             using (Bitmap bmp = new Bitmap(1, 1))
             {
-                using (Graphics g = Graphics.FromImage(bmp))
+                for (int i = 0; i < parts.Count; i++)
                 {
-                    for (int i = 0; i < parts.Count; i++)
+                    SizeF size = MeasureTextSize(parts[i].text, font);
+                    if (size.Width == 0 || size.Height == 0)
                     {
-                        SizeF size = g.MeasureString(parts[i].text, font);
-                        if (size.Width == 0 || size.Height == 0)
-                        {
-                            continue;
-                        }
-                        totalwidth += size.Width;
-                        totalheight = Math.Max(totalheight, size.Height);
-                        sizes.Add(size);
+                        continue;
                     }
+                    totalwidth += size.Width;
+                    totalheight = Math.Max(totalheight, size.Height);
+                    sizes.Add(size);
                 }
             }
             SizeF size2 = new SizeF(NextPowerOfTwo((uint)totalwidth), NextPowerOfTwo((uint)totalheight));
@@ -67,12 +64,11 @@ namespace ManicDigger
                 for (int i = 0; i < parts.Count; i++)
                 {
                     parts[i].text = parts[i].text;
-                    SizeF sizei = g2.MeasureString(parts[i].text, font);
+                    SizeF sizei = MeasureTextSize(parts[i].text, font);
                     if (sizei.Width == 0 || sizei.Height == 0)
                     {
                         continue;
                     }
-                    // g2.FillRectangle(new SolidBrush(Color.Black), currentwidth, 0, sizei.Width, sizei.Height);
                     g2.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
                     g2.DrawString(parts[i].text, font, new SolidBrush(Color.Black), currentwidth + 2f, 2f);
                     g2.DrawString(parts[i].text, font, new SolidBrush(parts[i].color.ToColor()), currentwidth, 0);
@@ -165,6 +161,17 @@ namespace ManicDigger
                 case 14: { return  new FastColor(Color.FromArgb(255, 255, 64)); }
                 case 15: { return  new FastColor(Color.FromArgb(255, 255, 255)); }
                 default: throw new Exception();
+            }
+        }
+
+        public SizeF MeasureTextSize(string text, Font font)
+        {
+            using (Bitmap bmp = new Bitmap(1, 1))
+            {
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    return g.MeasureString(text, font);
+                }
             }
         }
         int? HexToInt(char c)

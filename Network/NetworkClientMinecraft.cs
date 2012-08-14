@@ -180,6 +180,7 @@ namespace ManicDigger
         public string ServerName { get { return serverName; } set { serverName = value; } }
         public string ServerMotd { get { return serverMotd; } set { serverMotd = value; } }
         public int LocalPlayerId = 255;
+        bool ServerIdentified = false;
         private int TryReadPacket()
         {
             BinaryReader br = new BinaryReader(new MemoryStream(received.ToArray()));
@@ -192,8 +193,7 @@ namespace ManicDigger
             if (packetId != MinecraftServerPacketId.PositionandOrientationUpdate
                  && packetId != MinecraftServerPacketId.PositionUpdate
                 && packetId != MinecraftServerPacketId.OrientationUpdate
-                && packetId != MinecraftServerPacketId.PlayerTeleport
-                && packetId != MinecraftServerPacketId.ExtendedPacketTick)
+                && packetId != MinecraftServerPacketId.PlayerTeleport)
             {
                 Console.WriteLine(Enum.GetName(typeof(MinecraftServerPacketId), packetId));
             }
@@ -201,26 +201,33 @@ namespace ManicDigger
             {
                 case MinecraftServerPacketId.ServerIdentification:
                     {
-                        totalread += 1 + NetworkHelper.StringLength + NetworkHelper.StringLength + 1; if (received.Count < totalread) { return 0; }
-
-                        ServerPlayerIdentification p = new ServerPlayerIdentification();
-                        p.ProtocolVersion = br.ReadByte();
-                        string invalidversionstr = "Invalid game version. Local: {0}, Server: {1}";
-                        if (!(p.ProtocolVersion == 7 || p.ProtocolVersion == 8))
+                        if (!ServerIdentified)
                         {
-                            ManicDiggerGameWindow.DisconnectMessage = string.Format(invalidversionstr,
-                                "Minecraft 7", "Minecraft " + p.ProtocolVersion);
-                            ManicDiggerGameWindow.Disconnected = true;
+                            totalread += 1 + NetworkHelper.StringLength + NetworkHelper.StringLength + 1; if (received.Count < totalread) { return 0; }
+
+                            ServerPlayerIdentification p = new ServerPlayerIdentification();
+                            p.ProtocolVersion = br.ReadByte();
+                            string invalidversionstr = "Invalid game version. Local: {0}, Server: {1}";
+                            if (!(p.ProtocolVersion == 7 || p.ProtocolVersion == 8))
+                            {
+                                ManicDiggerGameWindow.DisconnectMessage = string.Format(invalidversionstr,
+                                    "Minecraft 7", "Minecraft " + p.ProtocolVersion);
+                                ManicDiggerGameWindow.Disconnected = true;
+                            }
+                            p.ServerName = NetworkHelper.ReadString64(br);
+                            p.ServerMotd = NetworkHelper.ReadString64(br);
+                            p.UserType = br.ReadByte();
+                            //connected = true;
+                            this.serverName = p.ServerName;
+                            this.ServerMotd = p.ServerMotd;
+                            ChatLog("---Connected---");
+                            ServerIdentified = true;
                         }
-                        p.ServerName = NetworkHelper.ReadString64(br);
-                        p.ServerMotd = NetworkHelper.ReadString64(br);
-                        p.UserType = br.ReadByte();
-                        //connected = true;
-                        this.serverName = p.ServerName;
-                        this.ServerMotd = p.ServerMotd;
-                        ChatLog("---Connected---");
 
                     }
+                    break;
+                    //no need for this
+                case MinecraftServerPacketId.SetPermission:
                     break;
                 case MinecraftServerPacketId.Ping:
                     {
@@ -407,7 +414,7 @@ namespace ManicDigger
                         ManicDiggerGameWindow.Disconnected = true;
                         break;
                     }
-                case MinecraftServerPacketId.ExtendedPacketCommand:
+               /* case MinecraftServerPacketId.ExtendedPacketCommand:
                     {
                         totalread += 1 + 4 + 4; if (received.Count < totalread) { return 0; }
                         int playerid = br.ReadByte();
@@ -441,7 +448,7 @@ namespace ManicDigger
                         }
                         gameworld.KeyFrame(allowedframe, hash, playerpositions);
                     }
-                    break;
+                    break;*/
                 default:
                     {
                         /*string disconnectReason = NetworkHelper.ReadString64(br);
@@ -629,9 +636,6 @@ namespace ManicDigger
         DespawnPlayer = 12,
         Message = 13,
         DisconnectPlayer = 14,
-        SetPermission = 15,
-
-        ExtendedPacketCommand = 100,
-        ExtendedPacketTick = 101,
+        SetPermission = 15
     }
 }

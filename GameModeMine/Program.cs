@@ -102,7 +102,6 @@ namespace ManicDigger
             terrainChunkDrawer.mapstorage = clientgame;
             terrainDrawer.terrainchunkdrawer = terrainChunkDrawer;
             terrainChunkDrawer.terrainrenderer = terrainDrawer;
-            terrainChunkDrawer.blockdrawertorch = new BlockDrawerTorchDummy();
             worldfeatures.getfile = getfile;
             worldfeatures.localplayerposition = localplayerposition;
             worldfeatures.mapstorage = mapstorage;
@@ -119,11 +118,11 @@ namespace ManicDigger
             w.mapManipulator = mapManipulator;
             w.terrain = terrainDrawer;
             weapon = new WeaponBlockInfo() { data = gamedata, terrain = terrainDrawer, viewport = w, map = clientgame, shadows = shadowssimple };
-            w.weapon = new WeaponRenderer() { info = weapon, blockdrawertorch = new BlockDrawerTorchDummy(), playerpos = w }; //no torch in mine mode
+            w.weapon = new WeaponRenderer() { info = weapon, playerpos = w }; //no torch in mine mode
             var playerdrawer = new CharacterRendererMonsterCode();
             playerdrawer.Load(new List<string>(File.ReadAllLines(getfile.GetFile("player.mdc"))));
             w.characterdrawer = playerdrawer;
-            w.particleEffectBlockBreak = new ParticleEffectBlockBreak() { data = gamedata, map = clientgame, terrain = terrainDrawer };
+            w.particleEffectBlockBreak = new ParticleEffectBlockBreak() {  d_Data = gamedata, d_Map = clientgame, d_Terrain = terrainDrawer, d_Shadows = shadowsfull};
             clientgame.terrain = terrainDrawer;
             clientgame.network = network;
             clientgame.viewport = w;
@@ -136,8 +135,8 @@ namespace ManicDigger
             playerskindownloader.the3d = the3d;
             playerskindownloader.skinserver = "http://minecraft.net/skin/";
             w.playerskindownloader = playerskindownloader;
-            physics.map = clientgame;
-            physics.data = gamedata;
+            physics.d_Map = clientgame;
+            physics.d_Data = gamedata;
             mapgenerator.data = gamedata;
             audio.getfile = getfile;
             audio.gameexit = w;

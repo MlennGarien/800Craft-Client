@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>ManicDigger</RootNamespace>
     <AssemblyName>ManicDigger</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <StartupObject>
     </StartupObject>
@@ -36,7 +36,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkProfile />
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -78,7 +78,6 @@
     <Compile Include="ConsoleForm.Designer.cs">
       <DependentUpon>ConsoleForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="IterableSet.cs" />
     <Compile Include="Network\LoginClient.cs" />
     <Compile Include="MeshBatcher.cs" />
     <Compile Include="Renderers\Model3d.cs" />
@@ -100,10 +99,13 @@
     <Compile Include="Renderers\TerrainRenderer.cs" />
     <Compile Include="Renderers\TextRenderer.cs" />
     <Compile Include="Renderers\TextureAtlasConverter.cs" />
+    <Compile Include="Scheduler.cs" />
+    <Compile Include="SchedulerTask.cs" />
     <Compile Include="Ticks.cs" />
     <Compile Include="MapTools\WaterSimple.cs" />
     <Compile Include="Renderers\WeaponRenderer.cs" />
     <Compile Include="MapTools\WorldGenerator.cs" />
+    <Compile Include="Version.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

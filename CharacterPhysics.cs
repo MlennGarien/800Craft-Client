@@ -23,12 +23,12 @@ namespace ManicDigger
     public class CharacterPhysics
     {
         [Inject]
-        public IMapStorage map { get; set; }
+        public IMapStorage d_Map;
         [Inject]
-        public IGameData data { get; set; }
+        public IGameData d_Data;
         bool IsTileEmptyForPhysics(int x, int y, int z)
         {
-            if (z >= map.MapSizeZ)
+            if (z >= d_Map.MapSizeZ)
             {
                 return true;
             }
@@ -37,17 +37,17 @@ namespace ManicDigger
             {
                 return ENABLE_FREEMOVE;
             }
-            if (x >= map.MapSizeX || y >= map.MapSizeY)// || z >= mapsizez)
+            if (x >= d_Map.MapSizeX || y >= d_Map.MapSizeY)// || z >= mapsizez)
             {
                 return ENABLE_FREEMOVE;
             }
             //this test is so the player does not walk on water.
-            if (data.IsWaterTile(map.GetBlock(x, y, z)) &&
-                !data.IsWaterTile(map.GetBlock(x, y, z + 1))) { return true; }
-            return map.GetBlock(x, y, z) == data.TileIdEmpty
-                || map.GetBlock(x, y, z) == data.TileIdSingleStairs
-                || (data.IsWaterTile(map.GetBlock(x, y, z)) && (!swimmingtop))
-                || data.IsEmptyForPhysics(map.GetBlock(x, y, z));
+            if (d_Data.IsWaterTile(d_Map.GetBlock(x, y, z)) &&
+                !d_Data.IsWaterTile(d_Map.GetBlock(x, y, z + 1))) { return true; }
+            return d_Map.GetBlock(x, y, z) == 0
+                || (d_Map.GetBlock(x, y, z) == d_Data.TileIdSingleStairs && d_Map.GetBlock(x, y, z + 2) == 0 && d_Map.GetBlock(x, y, z + 1) == 0) // also check if the block above the stair is empty
+                || (d_Data.IsWaterTile(d_Map.GetBlock(x, y, z)) && (!swimmingtop))
+                || d_Data.IsEmptyForPhysics(d_Map.GetBlock(x, y, z));
         }
         public static float walldistance = 0.3f;
         public static float characterheight = 1.21f;
@@ -61,28 +61,35 @@ namespace ManicDigger
             public Acceleration acceleration;
             public float movespeednow;
             public int movedx;
-            public int movedy;
+            public float movedy;
             public bool ENABLE_NOCLIP;
             public bool wantsjump;
             public bool moveup;
+            public bool movedown;
             public float jumpstartacceleration;
         }
-        public void Move(CharacterPhysicsState state, MoveInfo move, double dt, out bool soundnow)
+        public void Move(CharacterPhysicsState state, MoveInfo move, double dt, out bool soundnow, Vector3 push)
         {
             soundnow = false;
-            var diff1 = VectorTool.toVectorInFixedSystem1
+            Vector3 diff1 = VectorTool.toVectorInFixedSystem1
                 (move.movedx * move.movespeednow * (float)dt,
                 0,
                 move.movedy * move.movespeednow * (float)dt, state.playerorientation.X, state.playerorientation.Y);
+            if (push.Length > 0.01f)
+            {
+                push.Normalize();
+                push *= 5;
+            }
+            diff1 += push * (float)dt;
             if (!(move.ENABLE_FREEMOVE))
             {
-                if (!move.Swimming)
+                if (move.Swimming)//|| move.Anti-gravity)
                 {
-                    state.movedz += -gravity;//gravity
+                    state.movedz += -gravity * WaterGravityMultiplier; //more gravity because it's slippery.
                 }
                 else
                 {
-                    state.movedz += -gravity * WaterGravityMultiplier; //more gravity because it's slippery.
+                    state.movedz += -gravity;//gravity
                 }
             }
             if (enable_acceleration)
@@ -92,6 +99,7 @@ namespace ManicDigger
                 state.curspeed.Y = MakeCloserToZero(state.curspeed.Y, move.acceleration.acceleration2 * (float)dt);
                 state.curspeed.Z = MakeCloserToZero(state.curspeed.Z, move.acceleration.acceleration2 * (float)dt);
                 diff1.Y += move.moveup ? 2 * move.movespeednow * (float)dt : 0;
+                diff1.Y -= move.movedown ? 2 * move.movespeednow * (float)dt : 0;
                 state.curspeed += Vector3.Multiply(diff1, move.acceleration.acceleration3 * (float)dt);
                 if (state.curspeed.Length > move.movespeednow)
                 {
@@ -107,9 +115,10 @@ namespace ManicDigger
                 }
                 state.curspeed = diff1 * move.movespeednow;
             }
-            var newposition = state.playerposition + (state.curspeed) * (float)dt;
+            Vector3 newposition;
             if (!(move.ENABLE_FREEMOVE))
             {
+                newposition = state.playerposition + state.curspeed;
                 if (!move.Swimming)
                 {
                     newposition.Y = state.playerposition.Y;
@@ -123,14 +132,20 @@ namespace ManicDigger
                 }
                 newposition = state.playerposition + diff * (float)dt;
             }
+            else
+            {
+                newposition = state.playerposition + (state.curspeed) * (float)dt;
+            }
             newposition.Y += state.movedz * (float)dt;
             Vector3 previousposition = state.playerposition;
             if (!move.ENABLE_NOCLIP)
             {
                 this.swimmingtop = move.wantsjump && !move.Swimming;
+                // This is a temporary workaround for crashing at the top of the map.
+                // This needs to be cleaned up some other way.
                 try
                 {
-                    state.playerposition = WallSlide(state.playerposition, newposition);
+                    state.playerposition = WallSlide(state, state.playerposition, newposition);
                 }
                 catch
                 {
@@ -157,7 +172,7 @@ namespace ManicDigger
                     }
                     if (state.jumpacceleration > 0)
                     {
-                        state.jumpacceleration -= (float)dt * 1.8f;
+                        state.jumpacceleration -= (float)dt * 2.8f;
                     }
                     if (!this.reachedceiling)
                     {
@@ -195,7 +210,7 @@ namespace ManicDigger
                 return c;
             }
         }
-        public Vector3 WallSlide(Vector3 oldposition, Vector3 newposition)
+        public Vector3 WallSlide(CharacterPhysicsState state, Vector3 oldposition, Vector3 newposition)
         {
             reachedceiling = false;
             reachedwall = false;
@@ -203,9 +218,9 @@ namespace ManicDigger
             Vector3i oldpositioni = new Vector3i((int)Math.Floor(oldposition.X), (int)Math.Floor(oldposition.Z),
                 (int)Math.Floor(oldposition.Y));
             bool wasonstairs = false;
-            if (MapUtil.IsValidPos(map, oldpositioni.x, oldpositioni.y, oldpositioni.z))
+            if (MapUtil.IsValidPos(d_Map, oldpositioni.x, oldpositioni.y, oldpositioni.z))
             {
-                wasonstairs = map.GetBlock(oldpositioni.x, oldpositioni.y, oldpositioni.z) == data.TileIdSingleStairs;
+                wasonstairs = d_Map.GetBlock(oldpositioni.x, oldpositioni.y, oldpositioni.z) == d_Data.TileIdSingleStairs;
             }
             Vector3 playerposition = newposition;
             //left
@@ -225,11 +240,21 @@ namespace ManicDigger
                     }
                     else
                     {
-                        if (!newempty)
+                        bool aboveempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                        && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                        // if the new coord isnt passable stop the player from moving
+                        if (aboveempty && !IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y)))
                         {
                             playerposition.Y += 0.5f;
                             goto ok;
                         }
+                        if (!aboveempty)
+                        {
+                            reachedwall = true;
+                            playerposition.Z = oldposition.Z;
+                        }
+
+
                     }
                 }
             }
@@ -251,11 +276,21 @@ namespace ManicDigger
                     }
                     else
                     {
-                        if (!newempty)
+                        bool aboveempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                        && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                        // if the new coord isnt passable stop the player from moving
+                        if (aboveempty && !IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y)))
                         {
                             playerposition.Y += 0.5f;
                             goto ok;
                         }
+                        if (!aboveempty)
+                        {
+                            reachedwall = true;
+                            playerposition.X = oldposition.X;
+                        }
+
+
                     }
                 }
             }
@@ -296,11 +331,21 @@ namespace ManicDigger
                     }
                     else
                     {
-                        if (!newempty)
+                        bool aboveempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                        && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                        // if the new coord isnt passable stop the player from moving
+                        if (aboveempty && !IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y)))
                         {
                             playerposition.Y += 0.5f;
                             goto ok;
                         }
+                        if (!aboveempty)
+                        {
+                            reachedwall = true;
+                            playerposition.Z = oldposition.Z;
+                        }
+
+
                     }
                 }
             }
@@ -321,11 +366,21 @@ namespace ManicDigger
                     }
                     else
                     {
-                        if (!newempty)
+                        bool aboveempty = IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 1)
+                        && IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y) + 2);
+                        // if the new coord isnt passable stop the player from moving
+                        if (aboveempty && !IsTileEmptyForPhysics((int)Math.Floor(qnewposition.X), (int)Math.Floor(qnewposition.Z), (int)Math.Floor(qnewposition.Y)))
                         {
                             playerposition.Y += 0.5f;
                             goto ok;
                         }
+                        if (!aboveempty)
+                        {
+                            reachedwall = true;
+                            playerposition.X = oldposition.X;
+                        }
+
+
                     }
                 }
             }
@@ -346,11 +401,12 @@ namespace ManicDigger
             bool isonstairs = false;
             Vector3i playerpositioni = new Vector3i((int)Math.Floor(playerposition.X), (int)Math.Floor(playerposition.Z),
                  (int)Math.Floor(playerposition.Y));
-            if (MapUtil.IsValidPos(map, playerpositioni.x, playerpositioni.y, playerpositioni.z))
+            if (MapUtil.IsValidPos(d_Map, playerpositioni.x, playerpositioni.y, playerpositioni.z))
             {
-                isonstairs = map.GetBlock(playerpositioni.x, playerpositioni.y, playerpositioni.z) == data.TileIdSingleStairs;
+                isonstairs = d_Map.GetBlock(playerpositioni.x, playerpositioni.y, playerpositioni.z) == d_Data.TileIdSingleStairs;
             }
-            if (isonstairs)
+
+            if (isonstairs && state.jumpacceleration == 0)
             {
                 playerposition.Y = ((int)Math.Floor(playerposition.Y)) + 0.5f + walldistance;
             }

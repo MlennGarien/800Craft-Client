@@ -304,7 +304,7 @@ namespace ManicDigger
             data[(int)TileTypeMinecraft.Stone] = new TileTypeData() { Buildable = true, AllTextures = 1 };
             data[(int)TileTypeMinecraft.Grass] = new TileTypeData()
             {
-                Buildable = false,
+                Buildable = true,
                 TextureBottom = 2,
                 TextureSide = 3,
                 TextureTop = 0,
@@ -313,16 +313,16 @@ namespace ManicDigger
             data[(int)TileTypeMinecraft.Cobblestone] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 0 };
             data[(int)TileTypeMinecraft.Wood] = new TileTypeData() { Buildable = true, AllTextures = 4 };
             data[(int)TileTypeMinecraft.Sapling] = new TileTypeData() { Buildable = true, AllTextures = 15 }; //special
-            data[(int)TileTypeMinecraft.Adminium] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 1 };
+            data[(int)TileTypeMinecraft.Adminium] = new TileTypeData() { Buildable = false, AllTextures = (1 * 16) + 1 };
             data[(int)TileTypeMinecraft.Water] = new TileTypeData() { Buildable = false, AllTextures = 14 };
             data[(int)TileTypeMinecraft.StationaryWater] = new TileTypeData() { Buildable = false, AllTextures = 14 };
             data[(int)TileTypeMinecraft.Lava] = new TileTypeData() { Buildable = false, AllTextures = (1 * 16) + 14 };
             data[(int)TileTypeMinecraft.StationaryLava] = new TileTypeData() { Buildable = false, AllTextures = (1 * 16) + 14 };
             data[(int)TileTypeMinecraft.Sand] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 2 };
             data[(int)TileTypeMinecraft.Gravel] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 3 };
-            data[(int)TileTypeMinecraft.GoldOre] = new TileTypeData() { Buildable = false, AllTextures = (2 * 16) + 0 };
-            data[(int)TileTypeMinecraft.IronOre] = new TileTypeData() { Buildable = false, AllTextures = (2 * 16) + 1 };
-            data[(int)TileTypeMinecraft.CoalOre] = new TileTypeData() { Buildable = false, AllTextures = (2 * 16) + 2 };
+            data[(int)TileTypeMinecraft.GoldOre] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 0 };
+            data[(int)TileTypeMinecraft.IronOre] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 1 };
+            data[(int)TileTypeMinecraft.CoalOre] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 2 };
             data[(int)TileTypeMinecraft.TreeTrunk] = new TileTypeData()
             {
                 Buildable = true,
@@ -386,8 +386,8 @@ namespace ManicDigger
                 || tileType == (byte)TileTypeMinecraft.Sapling
                 //|| tileType == (byte)TileTypeMinecraft.Water
                 //|| tileType == (byte)TileTypeMinecraft.StationaryWater
-                //|| tileType == (byte)TileTypeMinecraft.Lava
-                //|| tileType == (byte)TileTypeMinecraft.StationaryLava
+               //|| tileType == (byte)TileTypeMinecraft.Lava
+               // || tileType == (byte)TileTypeMinecraft.StationaryLava
                 || tileType == (byte)TileTypeMinecraft.YellowFlowerDecorations
                 || tileType == (byte)TileTypeMinecraft.RedRoseDecorations
                 || tileType == (byte)TileTypeMinecraft.Leaves
@@ -473,6 +473,7 @@ namespace ManicDigger
         {
             return blocktype == TileIdEmpty
                 || IsBlockFlower(blocktype)
+                || blocktype == (int)TileTypeMinecraft.Empty
                 || blocktype == (int)TileTypeMinecraft.Leaves
                 || blocktype == (int)TileTypeMinecraft.Glass
                 || IsWaterTile(blocktype);

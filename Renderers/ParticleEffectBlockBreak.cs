@@ -16,25 +16,31 @@ namespace ManicDigger.Renderers
     public class ParticleEffectBlockBreak
     {
         [Inject]
-        public IMapStorage map { get; set; }
+        public IMapStorage d_Map;
         [Inject]
-        public ITerrainRenderer terrain { get; set; }
+        public IShadows d_Shadows;
         [Inject]
-        public IGameData data { get; set; }
+        public TerrainRenderer d_Terrain;
+        [Inject]
+        public IGameData d_Data;
         public void DrawImmediateParticleEffects(double deltaTime)
         {
-            GL.BindTexture(TextureTarget.Texture2D, terrain.terrainTexture);
+            GL.BindTexture(TextureTarget.Texture2D, d_Terrain.terrainTexture);
             foreach (ParticleEffect p in new List<ParticleEffect>(particleEffects))
             {
                 foreach (Particle pp in p.particles)
                 {
+                    float l = p.light;
                     GL.Begin(BeginMode.Triangles);
-                    RectangleF texrec = TextureAtlas.TextureCoords2d(p.textureid, terrain.texturesPacked);
+                    RectangleF texrec = TextureAtlas.TextureCoords2d(p.textureid, d_Terrain.texturesPacked);
                     GL.TexCoord2(texrec.Left, texrec.Top);
+                    GL.Color3(l, l, l);
                     GL.Vertex3(pp.position);
                     GL.TexCoord2(texrec.Right, texrec.Top);
+                    GL.Color3(l, l, l);
                     GL.Vertex3(pp.position + Vector3.Multiply(pp.direction, new Vector3(0, particlesize, particlesize)));
                     GL.TexCoord2(texrec.Right, texrec.Bottom);
+                    GL.Color3(l, l, l);
                     GL.Vertex3(pp.position + Vector3.Multiply(pp.direction, new Vector3(particlesize, 0, particlesize)));
                     Vector3 delta = pp.direction;
                     delta = Vector3.Multiply(delta, (float)deltaTime * particlespeed);
@@ -61,6 +67,7 @@ namespace ManicDigger.Renderers
             public DateTime start;
             public List<Particle> particles = new List<Particle>();
             public int textureid;
+            public float light = 1f;
         }
         Random rnd = new Random();
         public void StartParticleEffect(Vector3 v)
@@ -72,16 +79,18 @@ namespace ManicDigger.Renderers
             ParticleEffect p = new ParticleEffect();
             p.center = v + new Vector3(0.5f, 0.5f, 0.5f);
             p.start = DateTime.Now;
-            if (!MapUtil.IsValidPos(map, (int)v.X, (int)v.Z, (int)v.Y))
+            if (!MapUtil.IsValidPos(d_Map, (int)v.X, (int)v.Z, (int)v.Y))
             {
                 return;
             }
-            int tiletype = map.GetBlock((int)v.X, (int)v.Z, (int)v.Y);
-            if (!data.IsValidTileType(tiletype))
+            int tiletype = d_Map.GetBlock((int)v.X, (int)v.Z, (int)v.Y);
+            if (!d_Data.IsValidTileType(tiletype))
             {
                 return;
             }
-            p.textureid = data.GetTileTextureId(tiletype, TileSide.Top);
+            p.textureid = d_Data.GetTileTextureId(tiletype, (int)TileSide.Top);
+            
+            //p.light = (float)d_Shadows.MaybeGetLight((int)v.X, (int)v.Z, (int)v.Y) / d_Shadows.maxlight;
             for (int i = 0; i < particlecount; i++)
             {
                 Particle pp = new Particle();

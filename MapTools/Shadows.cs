@@ -447,7 +447,7 @@ namespace ManicDigger
         }
         private IEnumerable<Vector3i> BlocksNearWith(int x, int y, int z)
         {
-            yield return new Vector3i(x, y, z);
+           // yield return new Vector3i(x, y, z);
             yield return new Vector3i(x - 1, y, z);
             yield return new Vector3i(x + 1, y, z);
             yield return new Vector3i(x, y - 1, z);

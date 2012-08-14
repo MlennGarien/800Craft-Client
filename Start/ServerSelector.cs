@@ -7,6 +7,8 @@ using System.Text;
 using System.Windows.Forms;
 using System.Net;
 using System.IO;
+using System.Security.Cryptography;
+using System.Runtime.Serialization;
 
 namespace ManicDigger
 {
@@ -15,157 +17,76 @@ namespace ManicDigger
         public ServerSelector()
         {
             InitializeComponent();
+
         }
         public LoginClientMinecraft c;
         public List<ServerInfo> items;
 
         private void ServerSelector_Load(object sender, EventArgs e)
         {
-            webBrowser2.Navigating += new WebBrowserNavigatingEventHandler(webBrowser2_Navigating);
             LoadPassword();
-        }
-        void webBrowser1_Navigating(object sender, WebBrowserNavigatingEventArgs e)
-        {
-
-        }
-        void webBrowser2_Navigating(object sender, WebBrowserNavigatingEventArgs e)
-        {
-            if (!e.Url.AbsoluteUri.StartsWith("http://www.minecraft.net/"))
-            {
-                return;
-            }
-            e.Cancel = true;
-            SelectedServer = e.Url.AbsoluteUri;
-            SelectedServerMinecraft = true;
-            SetLoginData(SelectedServer);
-            Close();
+            Invoke(new MethodInvoker(UpdateChecker.UpdateCheck));
         }
         public string SelectedServer = null;
         public bool SelectedServerMinecraft = false;
         public string Cookie;
         public string SinglePlayer = null;
-        private void button1_Click(object sender, EventArgs e)
-        {
-        }
-        private void button2_Click(object sender, EventArgs e)
-        {
-        }
-        private void button2_Click_1(object sender, EventArgs e)
-        {
-        }
-        private void button2_Click_2(object sender, EventArgs e)
-        {
-            SinglePlayer = "Mine";
-            Close();
-        }
-        private void textBox2_TextChanged(object sender, EventArgs e)
-        {
-        }
-        private void label2_Click(object sender, EventArgs e)
-        {
-        }
-        private void webBrowser2_DocumentCompleted(object sender, WebBrowserDocumentCompletedEventArgs e)
-        {
-        }
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-            SinglePlayer = "Fortress";
-            Close();
-        }
-        private void button3_Click(object sender, EventArgs e)
-        {
-            if (textBox2.Text == "" || textBox3.Text == "")
-            {
-                MessageBox.Show("Enter username and password.");
-                return;
-            }
-            if (c == null)
-            {
-                c = new LoginClientMinecraft();
-                c.Progress += new EventHandler<ProgressEventArgs>(c_Progress);
-            }
-            if (checkBox1.Checked)
-            {
-                RememberPassword(textBox2.Text, textBox3.Text);
-            }
-            DrawServerList();
-        }
 
         void SearchServerList(string Cont)
         {
             if(Cont == null || Cont.Length < 1) return;
-            StringBuilder html = new StringBuilder();
             if (items.Count == 0)
             {
                 return;
             }
             for (int i = 0; i < items.Count; i++)
             {
-                var item = new ListViewItem();
                 if (items[i].Name.ToLower().Contains(Cont.ToLower()))
                 {
-                    item.Text = items[i].Name;
-                    item.SubItems.Add(items[i].Players.ToString());
-                    item.SubItems.Add(items[i].PlayersMax.ToString());
-                    html.AppendLine(string.Format("<a href=\"{0}\"><b>{1}</b></a> {2}/{3} <br>",
-                        items[i].Url, items[i].Name, items[i].Players, items[i].PlayersMax));
+                    string[] row = { items[i].Name, items[i].Players.ToString(), items[i].PlayersMax.ToString(),
+                                   items[i].Url};
+                    ListBox1.Rows.Add(row);
                 }
             }
-            if (html.Length < 1)
+            foreach (DataGridViewColumn column in ListBox1.Columns)
             {
-                webBrowser2.DocumentText = "No matches found";
-            }
-            else
-            {
-                webBrowser2.DocumentText = html.ToString();
+                column.SortMode = DataGridViewColumnSortMode.Automatic;
             }
         }
-
         void DrawServerList()
         {
-            if (items == null)
+            if (items == null || items.Count < 1)
             {
                 items = c.ServerList(textBox2.Text, textBox3.Text);
             }
             if (items.Count == 0)
             {
-                MessageBox.Show("Could not retrieve server list");
+                MessageBox.Show("Could not retrieve server list\n " +
+                    "Either Minecraft.net is down or your username and password\nare incorrect");
                 return;
             }
-            StringBuilder html = new StringBuilder();
             for (int i = 0; i < items.Count; i++)
             {
-                var item = new ListViewItem();
-                item.Text = items[i].Name;
-                item.SubItems.Add(items[i].Players.ToString());
-                item.SubItems.Add(items[i].PlayersMax.ToString());
-                html.AppendLine(string.Format("<a href=\"{0}\"><b>{1}</b></a> {2}/{3} <br>",
-                    items[i].Url, items[i].Name, items[i].Players, items[i].PlayersMax));
+                string[] row = { items[i].Name, items[i].Players.ToString(), items[i].PlayersMax.ToString(),
+                                   items[i].Url};
+                ListBox1.Rows.Add(row);
             }
-            webBrowser2.DocumentText = html.ToString();
+            foreach (DataGridViewColumn column in ListBox1.Columns)
+            {
+                column.SortMode = DataGridViewColumnSortMode.Automatic;
+            }
             SearchBox.Enabled = true;
         }
         void c_Progress(object sender, ProgressEventArgs e)
         {
+            progressBar1.Refresh();
             progressBar1.Value = e.ProgressPercent;
+            progressBar1.CreateGraphics().DrawString(e.ProgressPercent+"%",
+            new Font("Times New Roman", (float)12, FontStyle.Bold),
+            Brushes.Black, new PointF(progressBar1.Width / 2 - 10,
+                progressBar1.Height / 2 - 7));
         }
-        private void button4_Click(object sender, EventArgs e)
-        {
-            if (textBox2.Text == "" || textBox3.Text == "")
-            {
-                MessageBox.Show("Enter username and password.");
-                return;
-            }
-            if (textBox4.Text == "")
-            {
-                MessageBox.Show("Invalid server address.");
-                return;
-            }
-            SelectedServer = textBox4.Text;
-            SelectedServerMinecraft = true;
-            SetLoginData(textBox4.Text);
-            Close();
-        }
+       
         private void SetLoginData(string url)
         {
             LoginClientMinecraft c = new LoginClientMinecraft();
@@ -179,9 +100,6 @@ namespace ManicDigger
         public string LoginPort;
         public string LoginUser;
         public string LoginPassword;
-        private void splitContainer2_Panel1_Paint(object sender, PaintEventArgs e)
-        {
-        }
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
             if (!checkBox1.Checked)
@@ -217,28 +135,89 @@ namespace ManicDigger
         }
         private static string GetMinecraftPasswordFilePath()
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MinecraftPassword.txt");
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MCP.data");
         }
 
-        private void SearchBox_TextChanged(object sender, EventArgs e)
+        private void Button2_Click_3(object sender, EventArgs e)
         {
-            
+            if (textBox2.Text == "" || textBox3.Text == "")
+            {
+                MessageBox.Show("Enter username and password.");
+                return;
+            }
+            if (c == null)
+            {
+                c = new LoginClientMinecraft();
+                c.Progress += new EventHandler<ProgressEventArgs>(c_Progress);
+
+                if (checkBox1.Checked)
+                {
+                    RememberPassword(textBox2.Text, textBox3.Text);
+                }
+                DrawServerList();
+                TabControl1.SelectTab(1);
+            }
         }
 
-        private void SearchBox_TextChanged_1(object sender, EventArgs e)
+        private void textBox4_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void SearchBox_TextChanged_2(object sender, EventArgs e)
         {
             if (c == null) return;
             if (SearchBox.Text.Length < 1)
             {
-                DrawServerList();
+                Invoke(new MethodInvoker(DrawServerList));
                 return;
             }
+            ListBox1.Rows.Clear();
             SearchServerList(SearchBox.Text);
         }
 
-        private void splitContainer2_SplitterMoved(object sender, SplitterEventArgs e)
+        private void Button3_Click_1(object sender, EventArgs e)
         {
+            if (textBox2.Text == "" || textBox3.Text == "")
+            {
+                MessageBox.Show("Enter username and password.");
+                return;
+            }
+            if (textBox4.Text == "")
+            {
+                MessageBox.Show("Invalid server address.");
+                return;
+            }
+            SelectedServer = textBox4.Text;
+            SelectedServerMinecraft = true;
+            SetLoginData(textBox4.Text);
+            Close();
+        }
 
+        private void Button4_Click(object sender, EventArgs e)
+        {
+            if (textBox2.Text == "" || textBox3.Text == "")
+            {
+                MessageBox.Show("Enter username and password.");
+                return;
+            }
+            if (textBox4.Text == "" || !textBox4.Text.StartsWith("http://"))
+            {
+                MessageBox.Show("Invalid server address.");
+                return;
+            }
+            SelectedServer = textBox4.Text;
+            SelectedServerMinecraft = true;
+            SetLoginData(textBox4.Text);
+            Close();
+        }
+
+        private void ListBox1_SelectionChanged(object sender, EventArgs e)
+        {
+            if (ListBox1.SelectedRows.Count < 1) return;
+            int index = ListBox1.SelectedRows[0].Index;
+            if (index == -1) return;
+            textBox4.Text = ListBox1.Rows[index].Cells[3].Value.ToString();
         }
     }
 }
