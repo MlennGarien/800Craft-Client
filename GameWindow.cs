@@ -70,7 +70,7 @@ namespace ManicDigger
     {
         public bool ENABLE_BACKFACECULLING = false;
         public bool ENABLE_TRANSPARENCY = true;
-        public bool ENABLE_MIPMAPS = false;
+        public bool ENABLE_MIPMAPS = true;
         public bool ENABLE_VSYNC = false;
         public float viewdistance = 512;
     }
@@ -78,6 +78,8 @@ namespace ManicDigger
     {
         int LoadTexture(string filename);
         int LoadTexture(Bitmap bmp);
+        Matrix4 ModelViewMatrix { get; }
+        Matrix4 ProjectionMatrix { get; }
     }
     public class The3dDummy : IThe3d
     {
@@ -96,6 +98,16 @@ namespace ManicDigger
         public int LoadTexture(Bitmap bmp)
         {
             return TextureId;
+        }
+        #endregion
+        #region IThe3d Members
+        public Matrix4 ModelViewMatrix
+        {
+            get { return new Matrix4(); }
+        }
+        public Matrix4 ProjectionMatrix
+        {
+            get { return new Matrix4(); }
         }
         #endregion
     }
@@ -300,17 +312,30 @@ namespace ManicDigger
     }
     public class The3d : IThe3d
     {
+        [Inject]
         public Config3d config3d { get; set; }
+        public bool ALLOW_NON_POWER_OF_TWO = false;
         public int LoadTexture(string filename)
         {
             Bitmap bmp = new Bitmap(filename);
             return LoadTexture(bmp);
         }
+        bool IsPowerOfTwo(uint x)
+        {
+            return (
+              x == 1 || x == 2 || x == 4 || x == 8 || x == 16 || x == 32 ||
+              x == 64 || x == 128 || x == 256 || x == 512 || x == 1024 ||
+              x == 2048 || x == 4096 || x == 8192 || x == 16384 ||
+              x == 32768 || x == 65536 || x == 131072 || x == 262144 ||
+              x == 524288 || x == 1048576 || x == 2097152 ||
+              x == 4194304 || x == 8388608 || x == 16777216 ||
+              x == 33554432 || x == 67108864 || x == 134217728 ||
+              x == 268435456 || x == 536870912 || x == 1073741824 ||
+              x == 2147483648);
+        }
         //http://www.opentk.com/doc/graphics/textures/loading
         public int LoadTexture(Bitmap bmp)
         {
-            bool convertedbitmap = false;
-            
             GL.Enable(EnableCap.Texture2D);
             int id = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, id);
@@ -321,8 +346,22 @@ namespace ManicDigger
             }
             else
             {
-                //GL.GenerateMipmap(GenerateMipmapTarget.Texture2D); //DOES NOT WORK ON ATI GRAPHIC CARDS
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 1); //DOES NOT WORK ON ???
+                try
+                {
+                    GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.GenerateMipmap, 1); //DOES NOT WORK ON ???
+                }
+                catch
+                {
+                   try
+                    {
+                        GL.GenerateMipmap(GenerateMipmapTarget.Texture2D); //DOES NOT WORK ON ATI GRAPHIC CARDS
+                        
+                    }
+                    catch
+                    {
+                       config3d.ENABLE_MIPMAPS = false;
+                    }
+                }
                 int[] MipMapCount = new int[1];
                 GL.GetTexParameter(TextureTarget.Texture2D, GetTextureParameter.TextureMaxLevel, out MipMapCount[0]);
                 if (MipMapCount[0] == 0)
@@ -362,6 +401,10 @@ namespace ManicDigger
 
             return id;
         }
+        #region IThe3d Members
+        public Matrix4 ModelViewMatrix { get; set; }
+        public Matrix4 ProjectionMatrix { get; set; }
+        #endregion
     }
     public interface IKeyboard
     {
@@ -384,9 +427,13 @@ namespace ManicDigger
         void GuiStateCraft(List<CraftingRecipe> recipes, List<int> blocks, Action<int?> craftingRecipeSelected);
         int SelectedModelId { get; }
         bool ENABLE_FINITEINVENTORY { get; set; }
+        bool SkySphereNight { get; set; }
     }
     public class AnimationHint
     {
+        #region IViewport3d Members
+       public bool SkySphereNight { get; set; }
+        #endregion
         public bool InVehicle;
         public Vector3 DrawFix;
         public bool leanleft;
@@ -453,6 +500,9 @@ namespace ManicDigger
         #endregion
         #region IViewport3d Members
         public bool ENABLE_FINITEINVENTORY { get; set; }
+        #endregion
+        #region IViewport3d Members
+        public bool SkySphereNight { get; set; }
         #endregion
     }
     public interface IModelToDraw
@@ -583,6 +633,16 @@ namespace ManicDigger
         {
             terrain.UpdateAllTiles();
         }
+        #region IThe3d Members
+        public Matrix4 ModelViewMatrix
+        {
+            get { return m_theModelView; }
+        }
+        public Matrix4 ProjectionMatrix
+        {
+            get { return m_projectionMatrix; }
+        }
+        #endregion
         public void SetTileAndUpdate(Vector3 pos, int type)
         {
             //            frametickmainthreadtodo.Add(() =>
@@ -629,6 +689,8 @@ namespace ManicDigger
         }
         [Inject]
         public MapManipulator mapManipulator { get; set; }
+
+        public bool SkySphereNight { get; set; }
 
         public static System.Drawing.Text.PrivateFontCollection pfc = new System.Drawing.Text.PrivateFontCollection();
         protected override void OnLoad(EventArgs e)
@@ -892,7 +954,7 @@ namespace ManicDigger
                             {
                                 foglevel2--;
                             }
-                            terrain.DrawDistance = foglevel2;
+                            the3d.config3d.viewdistance = foglevel2;
                             //terrain.UpdateAllTiles();
                         }
                     }
@@ -977,6 +1039,19 @@ namespace ManicDigger
         }
         void Keyboard_KeyDown(object sender, OpenTK.Input.KeyboardKeyEventArgs e)
         {
+            if (e.Key == OpenTK.Input.Key.F10)
+            {
+                if (!SkySphereNight)
+                {
+                    SkySphereNight = true;
+                    return;
+                }
+                else
+                {
+                    SkySphereNight = false;
+                    return;
+                }
+            }
             if (e.Key == OpenTK.Input.Key.F11)
             {
                 if (WindowState == WindowState.Fullscreen)
@@ -1166,15 +1241,15 @@ namespace ManicDigger
                     int[] drawDistances = { 32, 64, 128, 256, 512 };
                     for (int i = 0; i < drawDistances.Length; i++)
                     {
-                        if (terrain.DrawDistance == drawDistances[i])
+                        if (the3d.config3d.viewdistance == drawDistances[i])
                         {
-                            terrain.DrawDistance = drawDistances[(i + 1) % drawDistances.Length];
+                            the3d.config3d.viewdistance = drawDistances[(i + 1) % drawDistances.Length];
                             goto done;
                         }
                     }
-                    terrain.DrawDistance = drawDistances[0];
+                    the3d.config3d.viewdistance = drawDistances[0];
                 done:
-                     Log("Fog distance: " + terrain.DrawDistance);
+                    Log("Fog distance: " + the3d.config3d.viewdistance);
                     OnResize(new EventArgs());
                  }
                 if (e.Key == OpenTK.Input.Key.B)
@@ -1484,12 +1559,13 @@ namespace ManicDigger
         {
             float aspect_ratio = Width / (float)Height;
             Matrix4 perpective = Matrix4.CreatePerspectiveFieldOfView(fov, aspect_ratio, znear, zfar);
+            this.m_projectionMatrix = perpective;
             //Matrix4 perpective = Matrix4.CreateOrthographic(800 * 0.10f, 600 * 0.10f, 0.0001f, zfar);
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref perpective);
         }
         float znear = 0.1f;
-        float zfar { get { return ENABLE_ZFAR ? terrain.DrawDistance : 99999; } }
+        float zfar { get { return ENABLE_ZFAR ? the3d.config3d.viewdistance : 99999; } }
         Vector3 up = new Vector3(0f, 1f, 0f);
         Point mouse_current, mouse_previous;
         Point mouse_delta;
@@ -1746,7 +1822,7 @@ namespace ManicDigger
             float jumpstartacceleration;
             if (movespeednow > 5f)
             {
-                jumpstartacceleration = 2.4f * physics.gravity * 1.75f;
+                jumpstartacceleration = 2.4f * physics.gravity * 1.40f;
             }
             else
             {
@@ -1942,6 +2018,7 @@ namespace ManicDigger
                 || data.IsEmptyForPhysics(map.GetBlock(x, y, z));
         }
         float PICK_DISTANCE = 6.5f;
+        Matrix4 m_projectionMatrix;
         public float PickDistance { get { return PICK_DISTANCE; } set { PICK_DISTANCE = value; } }
         Matrix4 m_theModelView;
         bool leftpressedpicking = false;
@@ -2223,7 +2300,7 @@ namespace ManicDigger
         {
             GL.ClearColor(guistate == GuiState.MapLoading ? Color.Black : clearcolor);
             base.OnRenderFrame(e);
-            if (terrain.DrawDistance < 256)
+            if (the3d.config3d.viewdistance < 256)
             {
                 SetFog();
             }
@@ -2319,19 +2396,26 @@ namespace ManicDigger
          private void SetFog()
         {
             float density = 0.3f;
-            //float[] fogColor = new[] { 1f, 1f, 1f, 1.0f };
-            float[] fogColor = new[] { (float)clearcolor.R / 256, (float)clearcolor.G / 256, (float)clearcolor.B / 256, (float)clearcolor.A / 256 };
+            float[] fogColor;
+            if (SkySphereNight)
+            {
+                fogColor = new[] { 0f, 0f, 0f, 1.0f };
+            }
+            else
+            {
+                fogColor = new[] { (float)clearcolor.R / 256, (float)clearcolor.G / 256, (float)clearcolor.B / 256, (float)clearcolor.A / 256 };
+            }
             GL.Enable(EnableCap.Fog);
             GL.Hint(HintTarget.FogHint, HintMode.Nicest);
             GL.Fog(FogParameter.FogMode, (int)FogMode.Linear);
             GL.Fog(FogParameter.FogColor, fogColor);
             GL.Fog(FogParameter.FogDensity, density);
             float fogsize = 10;
-            if (terrain.DrawDistance <= 64)
+            if (the3d.config3d.viewdistance <= 64)
             {
                 fogsize = 5;
             }
-            float fogstart = terrain.DrawDistance - fogsize;
+            float fogstart = the3d.config3d.viewdistance - fogsize;
             GL.Fog(FogParameter.FogStart, fogstart);
             GL.Fog(FogParameter.FogEnd, fogstart + fogsize);
         }
@@ -2376,11 +2460,13 @@ namespace ManicDigger
         AnimationState a = new AnimationState();
         public bool ENABLE_DRAW_TEST_CHARACTER = false;
         int skyspheretexture = -1;
+        int skyspherenighttexture = -1;
         private void DrawSkySphere()
         {
             if (skyspheretexture == -1)
             {
                 skyspheretexture = LoadTexture(getfile.GetFile("skysphere.png"));
+                skyspherenighttexture = LoadTexture(getfile.GetFile("skyspherenight.png"));
             }
             SkySphere skysphere = new SkySphere();
             ushort[] elements = skysphere.CalculateElements(1000, 1000, 20, 20);
@@ -2390,7 +2476,7 @@ namespace ManicDigger
             GL.PushMatrix();
             GL.Translate(LocalPlayerPosition);
             GL.Color3(Color.White);
-            GL.BindTexture(TextureTarget.Texture2D, skyspheretexture);
+            GL.BindTexture(TextureTarget.Texture2D, SkySphereNight ? skyspherenighttexture : skyspheretexture);
             GL.Begin(BeginMode.Triangles);
             for (int i = 0; i < elements.Length; i++)
             {

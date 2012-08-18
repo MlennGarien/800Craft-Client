@@ -33,20 +33,11 @@ namespace Start
                 {
                     try
                     {
-                        if (!f.SelectedServerMinecraft)
-                        {
-                            WebClient c = new WebClient();
-                            c.Headers[HttpRequestHeader.Cookie] = f.Cookie;
-                            c.DownloadFile("http://fragmer.net/md/play.php?server=" + f.SelectedServer, tempfile);
-                            RunLink(tempfile);
-                        }
-                        else
-                        {
-                            string ip = f.LoginIp;
-                            string port = f.LoginPort;
-                            string user = f.LoginUser;
-                            string password = f.LoginPassword;
-                            string s = string.Format(@"<?xml version=""1.0""?>
+                        string ip = f.LoginIp;
+                        string port = f.LoginPort;
+                        string user = f.LoginUser;
+                        string password = f.LoginPassword;
+                        string s = string.Format(@"<?xml version=""1.0""?>
 <ManicDiggerLink>
 	<Ip>{0}</Ip>
 	<Port>{1}</Port>
@@ -54,9 +45,8 @@ namespace Start
 	<User>{2}</User>
     <Password>{3}</Password>
 </ManicDiggerLink>", ip, port, user, password);
-                            File.WriteAllText(tempfile, s);
-                            RunLink(tempfile);
-                        }
+                        File.WriteAllText(tempfile, s);
+                        RunLink(tempfile);
                     }
                     catch (Exception e)
                     {

@@ -18,6 +18,7 @@ namespace ManicDigger
         public IGameData data { get; set; }
         [Inject]
         public IShadows shadows { get; set; }
+
         public void OnPick(Vector3 blockposnew, Vector3 blockposold, Vector3 pos3d, bool right)
         {
             var mode = right ? BlockSetMode.Create : BlockSetMode.Destroy;
@@ -70,6 +71,7 @@ namespace ManicDigger
         }
         public void OnNewFrame(double dt)
         {
+
         }
         public IEnumerable<ICharacterToDraw> Characters
         {
@@ -188,7 +190,7 @@ namespace ManicDigger
         }
         public float LightMaxValue()
         {
-            return shadows.maxlight;
+            return shadows.sunlight;
         }
         #endregion
         #region IGameMode Members

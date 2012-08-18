@@ -17,7 +17,6 @@ namespace ManicDigger
         public ServerSelector()
         {
             InitializeComponent();
-
         }
         public LoginClientMinecraft c;
         public List<ServerInfo> items;
@@ -28,7 +27,6 @@ namespace ManicDigger
             Invoke(new MethodInvoker(UpdateChecker.UpdateCheck));
         }
         public string SelectedServer = null;
-        public bool SelectedServerMinecraft = false;
         public string Cookie;
         public string SinglePlayer = null;
 
@@ -189,7 +187,6 @@ namespace ManicDigger
                 return;
             }
             SelectedServer = textBox4.Text;
-            SelectedServerMinecraft = true;
             SetLoginData(textBox4.Text);
             Close();
         }
@@ -207,7 +204,6 @@ namespace ManicDigger
                 return;
             }
             SelectedServer = textBox4.Text;
-            SelectedServerMinecraft = true;
             SetLoginData(textBox4.Text);
             Close();
         }

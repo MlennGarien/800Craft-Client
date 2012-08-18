@@ -192,10 +192,10 @@ namespace ManicDigger
                 return;
             }
             FastColor color = mapstorage.GetTerrainBlockColor(x, y, z);
-            FastColor colorShadowSide = new FastColor(Color.FromArgb(color.A,
+            FastColor colorShadowSide = new FastColor(color.A,
                 (int)(color.R * BlockShadow),
                 (int)(color.G * BlockShadow),
-                (int)(color.B * BlockShadow)));
+                (int)(color.B * BlockShadow));
             if (DONOTDRAWEDGES)
             {
                 //if the game is fillrate limited, then this makes it much faster.
@@ -232,10 +232,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy, zz + 1, x, y, z + 1);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
-                        (int)(color.B * shadowratio)));
+                        (int)(color.B * shadowratio));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Top);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Top);
@@ -260,10 +260,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy, zz - 1, x, y, z - 1);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
-                        (int)(Math.Min(curcolor.B, color.B * shadowratio))));
+                        (int)(Math.Min(curcolor.B, color.B * shadowratio)));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Bottom);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Bottom);
@@ -288,10 +288,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx - 1, yy, zz, x - 1, y, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
-                        (int)(color.B * shadowratio)));
+                        (int)(color.B * shadowratio));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Front);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Front);
@@ -316,10 +316,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx + 1, yy, zz, x + 1, y, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(color.R * shadowratio),
                         (int)(color.G * shadowratio),
-                        (int)(color.B * shadowratio)));
+                        (int)(color.B * shadowratio));
                 }
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Back);
                 int tilecount = GetTilingCount(currentChunk, xx, yy, zz, tt, x, y, z, shadowratio, TileSide.Back);
@@ -343,10 +343,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy - 1, zz, x, y - 1, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
-                        (int)(Math.Min(curcolor.B, color.B * shadowratio))));
+                        (int)(Math.Min(curcolor.B, color.B * shadowratio)));
                 }
 
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Left);
@@ -372,10 +372,10 @@ namespace ManicDigger
                 float shadowratio = GetShadowRatio(xx, yy + 1, zz, x, y + 1, z);
                 if (shadowratio != 1)
                 {
-                    curcolor = new FastColor(Color.FromArgb(color.A,
+                    curcolor = new FastColor(color.A,
                         (int)(Math.Min(curcolor.R, color.R * shadowratio)),
                         (int)(Math.Min(curcolor.G, color.G * shadowratio)),
-                        (int)(Math.Min(curcolor.B, color.B * shadowratio))));
+                        (int)(Math.Min(curcolor.B, color.B * shadowratio)));
                 }
 
                 int sidetexture = data.GetTileTextureId(tiletype, TileSide.Right);

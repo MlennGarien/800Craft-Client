@@ -117,6 +117,17 @@ namespace ManicDigger
             w.config3d = config3d;
             w.mapManipulator = mapManipulator;
             w.terrain = terrainDrawer;
+
+            bool IsMono = Type.GetType("Mono.Runtime") != null;
+            terrainDrawer.textureatlasconverter = new TextureAtlasConverter();
+            if (IsMono)
+            {
+                terrainDrawer.textureatlasconverter.fastbitmapfactory = () => { return new FastBitmapDummy(); };
+            }
+            else
+            {
+                terrainDrawer.textureatlasconverter.fastbitmapfactory = () => { return new FastBitmap(); };
+            }
             weapon = new WeaponBlockInfo() { data = gamedata, terrain = terrainDrawer, viewport = w, map = clientgame, shadows = shadowssimple };
             w.weapon = new WeaponRenderer() { info = weapon, playerpos = w }; //no torch in mine mode
             var playerdrawer = new CharacterRendererMonsterCode();
@@ -125,6 +136,7 @@ namespace ManicDigger
             w.particleEffectBlockBreak = new ParticleEffectBlockBreak() {  d_Data = gamedata, d_Map = clientgame, d_Terrain = terrainDrawer, d_Shadows = shadowsfull};
             clientgame.terrain = terrainDrawer;
             clientgame.network = network;
+
             clientgame.viewport = w;
             clientgame.data = gamedata;
             w.game = clientgame;
@@ -148,10 +160,16 @@ namespace ManicDigger
                 localplayerposition = localplayerposition,
                 config3d = config3d
             };
-            shadowssimple = new ShadowsSimple() { data = gamedata, map = clientgame };
+            shadowssimple = new ShadowsSimple() { data = gamedata, map = clientgame};
             UseShadowsSimple();
             w.currentshadows = this;
             terrainDrawer.ischunkready = new IsChunkReadyDummy();
+            var frustumculling = new FrustumCulling() { the3d = the3d };
+            terrainDrawer.frustumculling = frustumculling;
+            terrainDrawer.batcher = new MeshBatcher() { frustumculling = frustumculling };
+            terrainDrawer.frustumculling = frustumculling;
+            w.RenderFrame += (a, b) => { frustumculling.CalcFrustumEquations(); };
+
             if (Debugger.IsAttached)
             {
                 new DependencyChecker(typeof(InjectAttribute)).CheckDependencies(
@@ -173,11 +191,19 @@ namespace ManicDigger
         #endregion
         void UseShadowsSimple()
         {
+            if (clientgame.shadows != null)
+            {
+                shadowssimple.sunlight = clientgame.shadows.sunlight;
+            }
             clientgame.shadows = shadowssimple;
             weapon.shadows = clientgame.shadows;
         }
         void UseShadowsFull()
         {
+            if (clientgame.shadows != null)
+            {
+                shadowsfull.sunlight = clientgame.shadows.sunlight;
+            }
             clientgame.shadows = shadowsfull;
             weapon.shadows = clientgame.shadows;
         }

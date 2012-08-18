@@ -20,7 +20,7 @@ namespace ManicDigger.Renderers
         [Inject]
         public IShadows d_Shadows;
         [Inject]
-        public TerrainRenderer d_Terrain;
+        public ITerrainRenderer d_Terrain;
         [Inject]
         public IGameData d_Data;
         public void DrawImmediateParticleEffects(double deltaTime)

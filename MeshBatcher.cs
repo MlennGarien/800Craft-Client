@@ -8,10 +8,11 @@ namespace ManicDigger
 {
     public class MeshBatcher
     {
+        [Inject]
+        public IFrustumCulling frustumculling;
         public MeshBatcher()
         {
         }
-        The3d the3d = new The3d();
         private void genlists()
         {
             int lists = GL.GenLists(listincrease);
@@ -21,14 +22,9 @@ namespace ManicDigger
             }
             this.lists.Add(lists);
         }
-        public int listincrease = 1000;
-        //public int nlists = 50000;
+        public int listincrease = 1024;
         private int GetList(int i)
         {
-            while (i >= lists.Count * listincrease)
-            {
-                genlists();
-            }
             return lists[i / listincrease] + i % listincrease;
         }
         private void ClearLists()
@@ -46,6 +42,7 @@ namespace ManicDigger
         int count = 0;
         public void Remove(int p)
         {
+            GetListInfo(p).empty = true;
             empty[p] = 0;
         }
         struct ToAdd
@@ -55,9 +52,11 @@ namespace ManicDigger
             public int id;
             public bool transparent;
             public int texture;
+            public Vector3 center;
+            public float radius;
         }
         Queue<ToAdd> toadd = new Queue<ToAdd>();
-        public int Add(ushort[] p, VertexPositionTexture[] vertexPositionTexture, bool transparent, int texture)
+        public int Add(ushort[] p, VertexPositionTexture[] vertexPositionTexture, bool transparent, int texture, Vector3 center, float radius)
         {
             int id;
             lock (toadd)
@@ -78,10 +77,28 @@ namespace ManicDigger
                     vertices = vertexPositionTexture,
                     id = id,
                     transparent = transparent,
-                    texture = texture
+                    texture = texture,
+                    center = center,
+                    radius = radius
                 });
             }
             return id;
+        }
+        private void AllocateLists()
+        {
+            while (count >= lists.Count * listincrease)
+            {
+                genlists();
+            }
+            while (count >= listinfoCount)
+            {
+                Array.Resize(ref listinfo, listinfoCount + listincrease);
+                for (int i = listinfoCount; i < listinfoCount + listincrease; i++)
+                {
+                    listinfo[i] = new ListInfo();
+                }
+                listinfoCount += listincrease;
+            }
         }
         Dictionary<int, int> empty = new Dictionary<int, int>();
         float addperframe = 0.5f;
@@ -90,6 +107,7 @@ namespace ManicDigger
         public void Draw(Vector3 playerpos)
         {
             this.playerpos = playerpos;
+            AllocateLists();
             lock (toadd)
             {
                 addcounter += addperframe;
@@ -101,9 +119,9 @@ namespace ManicDigger
                     GL.NewList(GetList(t.id), ListMode.Compile);
 
                     GL.BindTexture(TextureTarget.Texture2D, t.texture);
-                    GL.EnableClientState(ArrayCap.TextureCoordArray);
-                    GL.EnableClientState(ArrayCap.VertexArray);
-                    GL.EnableClientState(ArrayCap.ColorArray);
+                    GL.EnableClientState(EnableCap.TextureCoordArray);
+                    GL.EnableClientState(EnableCap.VertexArray);
+                    GL.EnableClientState(EnableCap.ColorArray);
                     unsafe
                     {
                         fixed (VertexPositionTexture* p = t.vertices)
@@ -114,24 +132,17 @@ namespace ManicDigger
                             GL.DrawElements(BeginMode.Triangles, t.indices.Length, DrawElementsType.UnsignedShort, t.indices);
                         }
                     }
-                    GL.DisableClientState(ArrayCap.TextureCoordArray);
-                    GL.DisableClientState(ArrayCap.VertexArray);
-                    GL.DisableClientState(ArrayCap.ColorArray);
+                    GL.DisableClientState(EnableCap.TextureCoordArray);
+                    GL.DisableClientState(EnableCap.VertexArray);
+                    GL.DisableClientState(EnableCap.ColorArray);
 
-                    /*
-                    GL.Begin(BeginMode.Triangles);
-                    for (int ii = 0; ii < t.indices.Length; ii++)
-                    {
-                        var v = t.vertices[t.indices[ii]];
-                        GL.TexCoord2(v.u, v.v);
-                        GL.Vertex3(v.Position.X, v.Position.Y, v.Position.Z);
-                    }
-                    GL.End();
-                    */
                     GL.EndList();
-                    GetListInfo(t.id).indicescount = t.indices.Length;
-                    GetListInfo(t.id).center = t.vertices[0].Position;//todo
-                    GetListInfo(t.id).transparent = t.transparent;
+                    ListInfo li = GetListInfo(t.id);
+                    li.indicescount = t.indices.Length;
+                    li.center = t.center;
+                    li.radius = t.radius;
+                    li.transparent = t.transparent;
+                    li.empty = false;
                 }
                 if (toadd.Count == 0)
                 {
@@ -142,58 +153,65 @@ namespace ManicDigger
             {
                 tocall = new int[MAX_DISPLAY_LISTS];
             }
-            int tocallpos = 0;
-            for (int i = 0; i < count; i++)
+            if (tocall2 == null)
             {
-                if (!empty.ContainsKey(i))
-                {
-                    if (!GetListInfo(i).transparent)
-                    {
-                        tocall[tocallpos] = GetList(i);
-                        tocallpos++;
-                    }
-                }
+                tocall2 = new int[MAX_DISPLAY_LISTS];
             }
+            UpdateCulling();
+            int tocallpos = 0;
+            int tocallpos2 = 0;
+            PrepareToCall(ref tocallpos, ref tocallpos2);
             GL.CallLists(tocallpos, ListNameType.Int, tocall);
             tocallpos = 0;
-            if (the3d.config3d == null)
-            {
-                the3d.config3d = new Config3d();
-            }
-            if (the3d.config3d.ENABLE_BACKFACECULLING)
-            {
-                GL.Disable(EnableCap.CullFace);//for water.
-                GL.Enable(EnableCap.DepthTest);
-            }
+            GL.Disable(EnableCap.CullFace);//for water.
+            GL.CallLists(tocallpos2, ListNameType.Int, tocall2);
+            GL.Enable(EnableCap.CullFace);
+        }
+        private void PrepareToCall(ref int tocallpos, ref int tocallpos2)
+        {
             for (int i = 0; i < count; i++)
             {
-                if (!empty.ContainsKey(i))
+                ListInfo li = listinfo[i];
+                if (!li.render)
                 {
-                    if (GetListInfo(i).transparent)
-                    {
-                        tocall[tocallpos] = GetList(i);
-                        tocallpos++;
-                    }
+                    continue;
+                }
+                if (li.empty)
+                {
+                    continue;
+                }
+                if (!li.transparent)
+                {
+                    tocall[tocallpos] = GetList(i);
+                    tocallpos++;
+                }
+                else
+                {
+                    tocall2[tocallpos2] = GetList(i);
+                    tocallpos2++;
                 }
             }
-            GL.CallLists(tocallpos, ListNameType.Int, tocall);
-            if (the3d.config3d.ENABLE_BACKFACECULLING)
+        }
+        private void UpdateCulling()
+        {
+            int licount = this.count;
+            int count = 0;
+            for (int i = 0; i < licount; i++)
             {
-                GL.Enable(EnableCap.CullFace);
+                ListInfo li = listinfo[i];
+                Vector3 center = li.center;
+                li.render = frustumculling.SphereInFrustum(center.X, center.Y, center.Z, li.radius);
+                if (li.render == false)
+                {
+                    count++;
+                }
             }
-            //depth sorting. is it needed?
-            /*
-            List<int> alldrawlists = new List<int>();
-            for (int i = 0; i < count; i++)
-            {
-                alldrawlists.Add(i);
-            }
-            alldrawlists.Sort(f);
-            GL.CallLists(count, ListNameType.Int, alldrawlists.ToArray());
-            */
+            //Console.WriteLine("Not rendered: " + count);
+            //Console.WriteLine("Rendered: " + (licount - count));
         }
         public int MAX_DISPLAY_LISTS = 32 * 1024;
         int[] tocall;
+        int[] tocall2;
         int strideofvertices = -1;
         int StrideOfVertices
         {
@@ -205,20 +223,17 @@ namespace ManicDigger
         }
         class ListInfo
         {
+            public bool empty;
             public int indicescount;
             public Vector3 center;
+            public float radius;
             public bool transparent;
+            public bool render = true;
         }
-        /// <summary>
-        /// Indices count in list.
-        /// </summary>
-        List<ListInfo> listinfo = new List<ListInfo>();
+        ListInfo[] listinfo = new ListInfo[0];
+        int listinfoCount = 0;
         private ListInfo GetListInfo(int id)
         {
-            while (id >= listinfo.Count)
-            {
-                listinfo.Add(new ListInfo());
-            }
             return listinfo[id];
         }
         public void Clear()
@@ -227,7 +242,8 @@ namespace ManicDigger
             count = 0;
             empty.Clear();
             toadd.Clear();
-            listinfo = new List<ListInfo>();
+            listinfo = new ListInfo[0];
+            listinfoCount = 0;
         }
         public int TotalTriangleCount
         {
@@ -242,9 +258,13 @@ namespace ManicDigger
                 {
                     if (!empty.ContainsKey(i))
                     {
-                        if (i < listinfo.Count)
+                        if (i < listinfoCount)
                         {
-                            sum += GetListInfo(i).indicescount;
+                            ListInfo li = GetListInfo(i);
+                            if (li.render)
+                            {
+                                sum += li.indicescount;
+                            }
                         }
                     }
                 }

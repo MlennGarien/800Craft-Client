@@ -46,13 +46,6 @@ namespace ManicDigger
                     // Using data[i++] causes i to be incremented multiple times in Mono 2.2 (bug #479506).
                     data[i] = new VertexP3N3T2() { Position = v, Normal = n, TexCoord = uv };
                     i++;
-
-                    // Top - down texture projection.
-                    //Vector2 uv = new Vector2()
-                    //{
-                    //    X = (float)(Math.Atan2(n.X, n.Z) / Math.PI / 2 + 0.5),
-                    //    Y = (float)(Math.Asin(n.Y) / Math.PI / 2 + 0.5)
-                    //};
                 }
             }
             return data;

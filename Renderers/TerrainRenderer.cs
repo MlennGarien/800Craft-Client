@@ -160,6 +160,8 @@ namespace ManicDigger
         [Inject]
         public IThe3d the3d { get; set; }
         [Inject]
+        public IFrustumCulling frustumculling { get; set; }
+        [Inject]
         public IGetFilePath getfile { get; set; }
         [Inject]
         public Config3d config3d { get; set; }
@@ -177,6 +179,8 @@ namespace ManicDigger
         public IWorldFeaturesDrawer worldfeatures { get; set; }
         [Inject]
         public TerrainChunkRenderer terrainchunkdrawer { get; set; }
+        [Inject]
+        public TextureAtlasConverter textureatlasconverter = new TextureAtlasConverter();
         public event EventHandler<ExceptionEventArgs> OnCrash;
 
         public int chunksize = 16;
@@ -184,6 +188,12 @@ namespace ManicDigger
         public int texturesPacked { get { return 16; } } //16x16
         public int terrainTexture { get; set; }
 
+        public class RenderedChunk
+        {
+            public int[] ids;
+            public bool dirty = true;
+        }
+        RenderedChunk[] RendererMap;
         public int chunkdrawdistance
         {
             get
@@ -216,7 +226,7 @@ namespace ManicDigger
             using (var atlas2d = new Bitmap(getfile.GetFile("terrain.png")))
             {
                 terrainTexturesPerAtlas = atlas1dheight / (atlas2d.Width / atlas2dtiles);
-                List<Bitmap> atlases1d = new TextureAtlasConverter().Atlas2dInto1d(atlas2d, atlas2dtiles, atlas1dheight);
+                List<Bitmap> atlases1d = textureatlasconverter.Atlas2dInto1d(atlas2d, atlas2dtiles, atlas1dheight);
                 foreach (Bitmap bmp in atlases1d)
                 {
                     terrainTextures1d.Add(the3d.LoadTexture(bmp));
@@ -277,7 +287,6 @@ namespace ManicDigger
                 {
                     done = false;
                     if (exit.exit || exit2) { break; }
-                    CheckRespawn();
                     Point playerpoint = new Point((int)(localplayerposition.LocalPlayerPosition.X / chunksize), (int)(localplayerposition.LocalPlayerPosition.Z / chunksize));
                     ProcessAllPriorityTodos();
                     List<TodoItem> l = new List<TodoItem>();
@@ -294,7 +303,6 @@ namespace ManicDigger
                     {
                         var ti = l[i];
                         if (exit.exit || exit2) { break; }
-                        CheckRespawn();
                         ProcessAllPriorityTodos();
                         if (!ProcessUpdaterTodo(ti)) { max++; }
                     }
@@ -303,8 +311,6 @@ namespace ManicDigger
                 }
             }
         }
-           
-    
         
         private void FindChunksToDelete(List<TodoItem> l)
         {
@@ -328,12 +334,13 @@ namespace ManicDigger
                     bool add = false;
                     for (int z = 0; z < mapstorage.MapSizeZ / chunksize; z++)
                     {
-                        if (!batchedblocks.ContainsKey(GetV3HashCode(xx, yy, z)))
+                        if (!batchedblocks.ContainsKey(GetV3HashCode(xx, yy, z))) //if block isnt in the batcher
                         {
-                            add = true;
+                            add = true; //allow the add
                             break;
                         }
                     }
+                    //check if can be added and add
                     if (add && (new Vector3(xx * chunksize, localplayerposition.LocalPlayerPosition.Y, yy * chunksize) - localplayerposition.LocalPlayerPosition).Length <= chunkdrawdistance * chunksize
                         && IsValidChunkPosition(xx, yy))
                     {
@@ -352,16 +359,6 @@ namespace ManicDigger
                 && xx < mapstorage.MapSizeX / chunksize
                 && yy < mapstorage.MapSizeY / chunksize
                 && zz < mapstorage.MapSizeZ / chunksize;
-        }
-        private void CheckRespawn()
-        {
-            /*
-            if ((lastplayerposition - localplayerposition.LocalPlayerPosition).Length > 20)
-            {
-                UpdateAllTiles();
-            }
-            lastplayerposition = localplayerposition.LocalPlayerPosition;
-            */
         }
         Vector3 localplayerpositioncache;
         int FTodo(TodoItem a, TodoItem b)
@@ -423,15 +420,18 @@ namespace ManicDigger
                 for (int i = 0; i < ti.Length; i++)
                 {
                     var p = ti[i];
-                    var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
-                    var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                    if (chunk.Count() > 0)
+                    if (InFrustum((int)p.X, (int)p.Y, (int)p.Z))
                     {
-                        nearchunksadd.Add(p, chunk.ToArray());
-                    }
-                    if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
-                    {
-                        nearchunksremove.Add(p);
+                        var chunk = MakeChunk((int)p.X, (int)p.Y, (int)p.Z);
+                        var chunkk = new List<VerticesIndicesToLoad>(chunk);
+                        if (chunkk.Count() > 0)
+                        {
+                            nearchunksadd.Add(p, chunkk.ToArray());
+                        }
+                        if (batchedblocks.ContainsKey(GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)))
+                        {
+                            nearchunksremove.Add(p);
+                        }
                     }
                 }
                 //Update all near chunks at the same time, for flicker-free drawing.
@@ -461,7 +461,9 @@ namespace ManicDigger
                         List<int> ids = new List<int>();
                         foreach (var cc in chunk)
                         {
-                            ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture));
+                            Vector3 center = new Vector3(cc.position.X + chunksize / 2, cc.position.Z + chunksize / 2, cc.position.Y + chunksize / 2);
+                            float radius = chunksize;
+                            ids.Add(batcher.Add(cc.indices, cc.vertices, cc.transparent, cc.texture, center, radius));
                         }
                         batchedblocks[GetV3HashCode((int)p.X, (int)p.Y, (int)p.Z)] = new BlockData() { V = p, A = ids.ToArray() };
                     }
@@ -496,7 +498,9 @@ namespace ManicDigger
                             {
                                 if (v.indices.Length != 0)
                                 {
-                                    ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture));
+                                    Vector3 center = new Vector3(v.position.X + chunksize / 2, v.position.Z + chunksize / 2, v.position.Y + chunksize / 2);
+                                    float radius = chunksize;
+                                    ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture, center, radius));
                                 }
                             }
                             if (ids.Count > 0)
@@ -630,9 +634,13 @@ namespace ManicDigger
         {
             return (int)(0xE75C6973 * (uint)i + 0xC965737D * (uint)j + 0x7EC976D5 * (uint)k);
         }
+        private bool InFrustum(int x, int y, int z)
+        {
+           return frustumculling.SphereInFrustum(x * chunksize + chunksize / 2, z * chunksize + chunksize / 2, y * chunksize + chunksize / 2, chunksize);
+        }
 
         Vector3 lastplayerposition;
-        MeshBatcher batcher = new MeshBatcher();
+        public MeshBatcher batcher;
         public void UpdateAllTiles()
         {
             lock (terrainlock)
