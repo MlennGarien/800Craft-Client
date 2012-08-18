@@ -63,7 +63,7 @@ namespace ManicDigger
             {
                 if (empty.Count > 0)
                 {
-                    id = System.Linq.Enumerable.First(empty.Keys);
+                    id = MyLinq.First(empty.Keys);
                     empty.Remove(id);
                 }
                 else
@@ -195,19 +195,12 @@ namespace ManicDigger
         private void UpdateCulling()
         {
             int licount = this.count;
-            int count = 0;
             for (int i = 0; i < licount; i++)
             {
                 ListInfo li = listinfo[i];
                 Vector3 center = li.center;
                 li.render = frustumculling.SphereInFrustum(center.X, center.Y, center.Z, li.radius);
-                if (li.render == false)
-                {
-                    count++;
-                }
             }
-            //Console.WriteLine("Not rendered: " + count);
-            //Console.WriteLine("Rendered: " + (licount - count));
         }
         public int MAX_DISPLAY_LISTS = 32 * 1024;
         int[] tocall;

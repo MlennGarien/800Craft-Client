@@ -163,11 +163,14 @@ namespace ManicDigger
             shadowssimple = new ShadowsSimple() { data = gamedata, map = clientgame};
             UseShadowsSimple();
             w.currentshadows = this;
-            terrainDrawer.ischunkready = new IsChunkReadyDummy();
+            
             var frustumculling = new FrustumCulling() { the3d = the3d };
             terrainDrawer.frustumculling = frustumculling;
             terrainDrawer.batcher = new MeshBatcher() { frustumculling = frustumculling };
             terrainDrawer.frustumculling = frustumculling;
+            var dirtychunks = new DirtyChunks() { mapstorage = clientgame, frustum = frustumculling, chunksize = 16 };
+            terrainDrawer.ischunkready = dirtychunks;
+            dirtychunks.Start();
             w.RenderFrame += (a, b) => { frustumculling.CalcFrustumEquations(); };
 
             if (Debugger.IsAttached)
