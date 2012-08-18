@@ -168,10 +168,13 @@ namespace ManicDigger
             terrainDrawer.frustumculling = frustumculling;
             terrainDrawer.batcher = new MeshBatcher() { frustumculling = frustumculling };
             terrainDrawer.frustumculling = frustumculling;
-            var dirtychunks = new DirtyChunks() { mapstorage = clientgame, frustum = frustumculling, chunksize = 16 };
-            terrainDrawer.ischunkready = dirtychunks;
-            dirtychunks.Start();
             w.RenderFrame += (a, b) => { frustumculling.CalcFrustumEquations(); };
+            var dirtychunks = new DirtyChunks() { mapstorage = clientgame };
+            terrainDrawer.ischunkready = dirtychunks;
+            terrainDrawer.ischunkready.frustum = frustumculling;
+            terrainDrawer.ischunkready.Start();
+            //clientgame.ischunkready = dirtychunks;
+            
 
             if (Debugger.IsAttached)
             {

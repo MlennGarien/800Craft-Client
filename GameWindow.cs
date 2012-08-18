@@ -2300,7 +2300,7 @@ namespace ManicDigger
         {
             GL.ClearColor(guistate == GuiState.MapLoading ? Color.Black : clearcolor);
             base.OnRenderFrame(e);
-            if (the3d.config3d.viewdistance < 256)
+            if (terrain.DrawDistance < 256)
             {
                 SetFog();
             }
@@ -2308,10 +2308,13 @@ namespace ManicDigger
             {
                 GL.Disable(EnableCap.Fog);
             }
-            if (IsMono){                
-               Application.DoEvents();
-               Thread.Sleep(0);
-           }
+            //Sleep is required in Mono for running the terrain background thread.
+            if (IsMono)
+            {
+                Application.DoEvents();
+                Thread.Sleep(0);
+            }
+
             var deltaTime = e.Time;
 
             accumulator += deltaTime;
@@ -2336,30 +2339,42 @@ namespace ManicDigger
             //const float alpha = accumulator / dt;
             //Vector3 currentPlayerPosition = currentState * alpha + previousState * (1.0f - alpha);
             UpdateTitleFps(e);
+
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             GL.BindTexture(TextureTarget.Texture2D, terrain.terrainTexture);
 
             GL.MatrixMode(MatrixMode.Modelview);
-                Matrix4 camera;
-                if (overheadcamera)
-                {
-                    camera = OverheadCamera();
-                }
-                else
-                    camera = FppCamera();
-                GL.LoadMatrix(ref camera);
-                m_theModelView = camera;
+
+            Matrix4 camera;
+            if (overheadcamera)
+            {
+                camera = OverheadCamera();
+            }
+            else
+                camera = FppCamera();
+            GL.LoadMatrix(ref camera);
+            m_theModelView = camera;
+
+            //if (BeforeRenderFrame != null) { BeforeRenderFrame(this, new EventArgs()); }
+
+            bool drawgame = guistate != GuiState.MapLoading;
+            if (drawgame)
+            {
                 DrawSkySphere();
-                DrawCharacters((float)e.Time);
-                DrawPlayers((float)e.Time);
-                
                 terrain.Draw();
                 particleEffectBlockBreak.DrawImmediateParticleEffects(e.Time);
                 if (ENABLE_DRAW2D)
                 {
                     DrawLinesAroundSelectedCube(pickcubepos);
                 }
+
+                DrawCharacters((float)e.Time);
+                if (ENABLE_DRAW_TEST_CHARACTER)
+                {
+                    characterdrawer.DrawCharacter(a, game.PlayerPositionSpawn, 0, 0, true, (float)dt, GetPlayerTexture(255), new AnimationHint());
+                }
+                DrawPlayers((float)e.Time);
                 foreach (IModelToDraw m in game.Models)
                 {
                     if (m.Id == selectedmodelid)
@@ -2383,14 +2398,11 @@ namespace ManicDigger
                 {
                     weapon.DrawWeapon((float)e.Time);
                 }
+            }
             SetAmbientLight(Color.White);
             Draw2d();
             DrawPlayerNames();
             //OnResize(new EventArgs());
-            if (Disconnected)
-            {
-                DrawDisconnected(DisconnectMessage);
-            }
             SwapBuffers();
         }
          private void SetFog()

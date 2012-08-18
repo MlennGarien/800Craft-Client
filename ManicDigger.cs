@@ -112,8 +112,6 @@ namespace ManicDigger
         float WaterLevel { get; set; }
         void Dispose();
         void UseMap(byte[, ,] map);
-        void MapBlock(int a, int b, int c, byte type);
-        void SetChunk(int x, int y, int z, byte[, ,] chunk);
     }
     public class Player
     {
@@ -125,6 +123,23 @@ namespace ManicDigger
     }
     public static class MapUtil
     {
+        public static Point PlayerCenterArea(int playerAreaSize, int centerAreaSize, Vector3i blockPosition)
+        {
+            int px = blockPosition.x;
+            int py = blockPosition.y;
+            int gridposx = (px / centerAreaSize) * centerAreaSize;
+            int gridposy = (py / centerAreaSize) * centerAreaSize;
+            return new Point(gridposx, gridposy);
+        }
+        public static Point PlayerArea(int playerAreaSize, int centerAreaSize, Vector3i blockPosition)
+        {
+            Point p = PlayerCenterArea(playerAreaSize, centerAreaSize, blockPosition);
+            int x = p.X + centerAreaSize / 2;
+            int y = p.Y + centerAreaSize / 2;
+            x -= playerAreaSize / 2;
+            y -= playerAreaSize / 2;
+            return new Point(x, y);
+        }
         public static Vector3i Pos(int index, int sizex, int sizey)
         {
             int x = index % sizex;
@@ -250,17 +265,8 @@ namespace ManicDigger
         {
             this.map = map;
         }
-        public void MapBlock(int a, int b, int c, byte type)
-        {
-            this.map[a, b, c] = type;
-        }
         #endregion
-        #region IMapStorage Members
-        public void SetChunk(int x, int y, int z, byte[, ,] chunk)
-        {
-            throw new NotImplementedException();
-        }
-        #endregion
+        
     }
     public class XmlTool
     {

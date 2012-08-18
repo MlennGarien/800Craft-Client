@@ -9,16 +9,15 @@ namespace ManicDigger
     public class GameMinecraft : IGameMode, IMapStorage, IClients, ITerrainInfo
     {
         [Inject]
-        public ITerrainRenderer terrain { get; set; }
+        public ITerrainRenderer terrain;
         [Inject]
-        public IViewport3d viewport { get; set; }
+        public IViewport3d viewport;
         [Inject]
-        public INetworkClient network { get; set; }
+        public INetworkClient network;
         [Inject]
-        public IGameData data { get; set; }
+        public IGameData data;
         [Inject]
-        public IShadows shadows { get; set; }
-
+        public IShadows shadows;
         public void OnPick(Vector3 blockposnew, Vector3 blockposold, Vector3 pos3d, bool right)
         {
             var mode = right ? BlockSetMode.Create : BlockSetMode.Destroy;
@@ -71,7 +70,6 @@ namespace ManicDigger
         }
         public void OnNewFrame(double dt)
         {
-
         }
         public IEnumerable<ICharacterToDraw> Characters
         {
@@ -82,13 +80,13 @@ namespace ManicDigger
         public MapStorage map = new MapStorage();
         public Vector3 PlayerOrientationSpawn { get { return new Vector3((float)Math.PI, 0, 0); } }
         IDictionary<int, Player> players = new Dictionary<int, Player>();
-        public IDictionary<int,Player> Players { get { return players; } set { players = value; } }
+        public IDictionary<int, Player> Players { get { return players; } set { players = value; } }
         public GameMinecraft()
         {
-            map.Map = new byte[256, 256, 64];
+            map.Map = new byte[256, 256, 256];
             map.MapSizeX = 256;
             map.MapSizeY = 256;
-            map.MapSizeZ = 64;
+            map.MapSizeZ = 256;
         }
         #region IMapStorage Members
         public void SetBlock(int x, int y, int z, int tileType)
@@ -119,6 +117,7 @@ namespace ManicDigger
             int x = map.MapSizeX / 2;
             int y = map.MapSizeY / 2;
             playerpositionspawn = new Vector3(x + 0.5f, MapUtil.blockheight(map, data.TileIdEmpty, x, y), y + 0.5f);
+            terrain.UpdateAllTiles();
         }
         #endregion
         #region IMapStorage Members
@@ -135,12 +134,6 @@ namespace ManicDigger
             MapSizeY = map.GetUpperBound(1) + 1;
             MapSizeZ = map.GetUpperBound(2) + 1;
             shadows.ResetShadows();
-        }
-        public void MapBlock(int a, int b, int c, byte type)
-        {
-            this.Map[a, b, c] = (byte)type;
-            terrain.UpdateTile(a, b, c);
-            shadows.OnLocalBuild(a,b,c);
         }
         #endregion
         MapManipulator mapmanipulator = new MapManipulator();
@@ -190,7 +183,7 @@ namespace ManicDigger
         }
         public float LightMaxValue()
         {
-            return shadows.sunlight;
+            return shadows.maxlight;
         }
         #endregion
         #region IGameMode Members
@@ -200,6 +193,12 @@ namespace ManicDigger
         #endregion
         #region IMapStorage Members
         public void SetChunk(int x, int y, int z, byte[, ,] chunk)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+        #region ITerrainInfo Members
+        public byte[] GetChunk(int x, int y, int z)
         {
             throw new NotImplementedException();
         }
@@ -306,7 +305,7 @@ namespace ManicDigger
             data[(int)TileTypeMinecraft.Stone] = new TileTypeData() { Buildable = true, AllTextures = 1 };
             data[(int)TileTypeMinecraft.Grass] = new TileTypeData()
             {
-                Buildable = true,
+                Buildable = false,
                 TextureBottom = 2,
                 TextureSide = 3,
                 TextureTop = 0,
@@ -315,16 +314,16 @@ namespace ManicDigger
             data[(int)TileTypeMinecraft.Cobblestone] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 0 };
             data[(int)TileTypeMinecraft.Wood] = new TileTypeData() { Buildable = true, AllTextures = 4 };
             data[(int)TileTypeMinecraft.Sapling] = new TileTypeData() { Buildable = true, AllTextures = 15 }; //special
-            data[(int)TileTypeMinecraft.Adminium] = new TileTypeData() { Buildable = false, AllTextures = (1 * 16) + 1 };
+            data[(int)TileTypeMinecraft.Adminium] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 1 };
             data[(int)TileTypeMinecraft.Water] = new TileTypeData() { Buildable = false, AllTextures = 14 };
             data[(int)TileTypeMinecraft.StationaryWater] = new TileTypeData() { Buildable = false, AllTextures = 14 };
             data[(int)TileTypeMinecraft.Lava] = new TileTypeData() { Buildable = false, AllTextures = (1 * 16) + 14 };
             data[(int)TileTypeMinecraft.StationaryLava] = new TileTypeData() { Buildable = false, AllTextures = (1 * 16) + 14 };
             data[(int)TileTypeMinecraft.Sand] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 2 };
             data[(int)TileTypeMinecraft.Gravel] = new TileTypeData() { Buildable = true, AllTextures = (1 * 16) + 3 };
-            data[(int)TileTypeMinecraft.GoldOre] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 0 };
-            data[(int)TileTypeMinecraft.IronOre] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 1 };
-            data[(int)TileTypeMinecraft.CoalOre] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 2 };
+            data[(int)TileTypeMinecraft.GoldOre] = new TileTypeData() { Buildable = false, AllTextures = (2 * 16) + 0 };
+            data[(int)TileTypeMinecraft.IronOre] = new TileTypeData() { Buildable = false, AllTextures = (2 * 16) + 1 };
+            data[(int)TileTypeMinecraft.CoalOre] = new TileTypeData() { Buildable = false, AllTextures = (2 * 16) + 2 };
             data[(int)TileTypeMinecraft.TreeTrunk] = new TileTypeData()
             {
                 Buildable = true,
@@ -377,10 +376,23 @@ namespace ManicDigger
             };//47
             data[(int)TileTypeMinecraft.MossyCobblestone] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 4 };//48
             data[(int)TileTypeMinecraft.Obsidian] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 5 };//49
-            
         }
         TileTypeData[] data = new TileTypeData[256];
-        
+        /*
+            if (blockUp == 0 || blockUp == 8 || blockUp == 9 ||
+                blockUp == 10 || blockUp == 11 || blockUp == 18 ||
+                blockUp == 44 || blockUp == 6 || blockUp == 37 ||
+                blockUp == 38 || blockUp == 39 || blockUp == 40 ||
+                blockLeft == 0 || blockLeft == 8 || blockLeft == 9 ||
+                blockLeft == 10 || blockLeft == 11 || blockLeft == 18 ||
+                blockLeft == 44 || blockLeft == 6 || blockLeft == 37 ||
+                blockLeft == 38 || blockLeft == 39 || blockLeft == 40 ||
+                blockRight == 0 || blockRight == 8 || blockRight == 9 ||
+                blockRight == 10 || blockRight == 11 || blockRight == 18 ||
+                blockRight == 44 || blockRight == 6 || blockRight == 37 ||
+                blockRight == 38 || blockRight == 39 || blockRight == 40)
+                Blend(block);
+        */
         public bool IsTransparentTile(int tileType)
         {
             return
@@ -388,11 +400,11 @@ namespace ManicDigger
                 || tileType == (byte)TileTypeMinecraft.Sapling
                 //|| tileType == (byte)TileTypeMinecraft.Water
                 //|| tileType == (byte)TileTypeMinecraft.StationaryWater
-               //|| tileType == (byte)TileTypeMinecraft.Lava
-               // || tileType == (byte)TileTypeMinecraft.StationaryLava
+                //|| tileType == (byte)TileTypeMinecraft.Lava
+                //|| tileType == (byte)TileTypeMinecraft.StationaryLava
                 || tileType == (byte)TileTypeMinecraft.YellowFlowerDecorations
                 || tileType == (byte)TileTypeMinecraft.RedRoseDecorations
-                || tileType == (byte)TileTypeMinecraft.Leaves
+                //|| tileType == (byte)TileTypeMinecraft.Leaves
                 || tileType == (byte)TileTypeMinecraft.Glass
                 || tileType == (byte)TileTypeMinecraft.RedMushroom
                 || tileType == (byte)TileTypeMinecraft.BrownMushroom
@@ -425,7 +437,6 @@ namespace ManicDigger
                 || tiletype == (int)TileTypeMinecraft.BrownMushroom;
         }
         #endregion
-        
         #region IGameData Members
         public int TileIdSingleStairs
         {
@@ -475,8 +486,7 @@ namespace ManicDigger
         {
             return blocktype == TileIdEmpty
                 || IsBlockFlower(blocktype)
-                || blocktype == (int)TileTypeMinecraft.Empty
-                || blocktype == (int)TileTypeMinecraft.Leaves
+                //|| blocktype == (int)TileTypeMinecraft.Leaves
                 || blocktype == (int)TileTypeMinecraft.Glass
                 || IsWaterTile(blocktype);
         }
@@ -509,7 +519,6 @@ namespace ManicDigger
                 || blocktype == (int)TileTypeMinecraft.StationaryLava;
         }
         #endregion
-        
         #region IGameData Members
         public int GetLightRadius(int blocktype)
         {

@@ -63,7 +63,7 @@ namespace ManicDigger
             {
                 if (empty.Count > 0)
                 {
-                    id = MyLinq.First(empty.Keys);
+                    id = System.Linq.Enumerable.First(empty.Keys);
                     empty.Remove(id);
                 }
                 else

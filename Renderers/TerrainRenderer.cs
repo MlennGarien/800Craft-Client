@@ -179,12 +179,12 @@ namespace ManicDigger
         int bigchunkdrawdistance_z { get { return Math.Max(1, chunkdrawdistance_z / bigchunksize); } }
         public void Start()
         {
-            mapsizexchunks = mapstorage.MapSizeX / chunksize;
-            mapsizeychunks = mapstorage.MapSizeY / chunksize;
-            mapsizezchunks = mapstorage.MapSizeZ / chunksize;
-            mapsizexchunksbig = mapsizexchunks / bigchunksize;
-            mapsizeychunksbig = mapsizeychunks / bigchunksize;
-            mapsizezchunksbig = mapsizezchunks / bigchunksize;
+            mapsizexchunks = 1024 / chunksize;
+            mapsizeychunks = 1024 / chunksize;
+            mapsizezchunks = 1024 / chunksize;
+            mapsizexchunksbig = 1024 / bigchunksize;
+            mapsizeychunksbig = 1024 / bigchunksize;
+            mapsizezchunksbig = 1024 / bigchunksize;
             small = new bool[mapsizexchunks, mapsizeychunks, mapsizezchunks];
             big = new bool[mapsizexchunksbig, mapsizeychunksbig, mapsizezchunksbig];
         }
@@ -383,7 +383,6 @@ namespace ManicDigger
         public IFrustumCulling frustumculling;
         [Inject]
         public DirtyChunks ischunkready;
-        [Inject]
         public TextureAtlasConverter textureatlasconverter;
         public event EventHandler<ExceptionEventArgs> OnCrash;
 
@@ -569,54 +568,58 @@ namespace ManicDigger
         {
             Dictionary<Vector3i, List<VerticesIndicesToLoad>> toadd = new Dictionary<Vector3i, List<VerticesIndicesToLoad>>();
             List<Vector3i> toremove = new List<Vector3i>();
-            foreach (Vector3i v in l)
+            try
             {
-                IEnumerable<VerticesIndicesToLoad> chunk = MakeChunk(v.x, v.y, v.z);
-                var chunkk = new List<VerticesIndicesToLoad>(chunk);
-                toadd[v] = chunkk;
-                toremove.Add(v);
-            }
+                foreach (Vector3i v in l)
+                {
+                    IEnumerable<VerticesIndicesToLoad> chunk = MakeChunk(v.x, v.y, v.z);
+                    var chunkk = new List<VerticesIndicesToLoad>(chunk);
+                    toadd[v] = chunkk;
+                    toremove.Add(v);
+                }
 
-            //lock to remove and add at the same time (no flicker)
-            lock (terrainlock)
-            {
-                foreach (Vector3i q in toremove)
+                //lock to remove and add at the same time (no flicker)
+                lock (terrainlock)
                 {
-                    //do remove old
-                    if (batchedchunks[q.x, q.y, q.z] != null)
+                    foreach (Vector3i q in toremove)
                     {
-                        foreach (int id in batchedchunks[q.x, q.y, q.z])
+                        //do remove old
+                        if (batchedchunks[q.x, q.y, q.z] != null)
                         {
-                            batcher.Remove(id);
-                        }
-                        batchedchunks[q.x, q.y, q.z] = null;
-                        batchedchunkspositions.Remove(q);
-                    }
-                }
-                foreach (var q in toadd)
-                {
-                    List<int> ids = new List<int>();
-                    //do add
-                    foreach (VerticesIndicesToLoad v in q.Value)
-                    {
-                        if (v.indices.Length != 0)
-                        {
-                            Vector3 center = new Vector3(v.position.X + chunksize / 2, v.position.Z + chunksize / 2, v.position.Y + chunksize / 2);
-                            float radius = chunksize;
-                            ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture, center, radius));
+                            foreach (int id in batchedchunks[q.x, q.y, q.z])
+                            {
+                                batcher.Remove(id);
+                            }
+                            batchedchunks[q.x, q.y, q.z] = null;
+                            batchedchunkspositions.Remove(q);
                         }
                     }
-                    if (ids.Count > 0)
+                    foreach (var q in toadd)
                     {
-                        batchedchunks[q.Key.x, q.Key.y, q.Key.z] = ids.ToArray();
+                        List<int> ids = new List<int>();
+                        //do add
+                        foreach (VerticesIndicesToLoad v in q.Value)
+                        {
+                            if (v.indices.Length != 0)
+                            {
+                                Vector3 center = new Vector3(v.position.X + chunksize / 2, v.position.Z + chunksize / 2, v.position.Y + chunksize / 2);
+                                float radius = chunksize;
+                                ids.Add(batcher.Add(v.indices, v.vertices, v.transparent, v.texture, center, radius));
+                            }
+                        }
+                        if (ids.Count > 0)
+                        {
+                            batchedchunks[q.Key.x, q.Key.y, q.Key.z] = ids.ToArray();
+                        }
+                        else
+                        {
+                            batchedchunks[q.Key.x, q.Key.y, q.Key.z] = new int[0];
+                        }
+                        batchedchunkspositions.Add(q.Key);
                     }
-                    else
-                    {
-                        batchedchunks[q.Key.x, q.Key.y, q.Key.z] = new int[0];
-                    }
-                    batchedchunkspositions.Add(q.Key);
                 }
             }
+            catch { }
         }
         int chunksToDeleteIterationSpeed = 100;
         private IEnumerable<Vector3i> FindChunksToDelete()
@@ -689,9 +692,20 @@ namespace ManicDigger
         }
         public void UpdateAllTiles()
         {
-            foreach (Vector3i v in batchedchunkspositions.dictionary.Keys)
+            ischunkready.Start();
+            for (int x = 0; x < mapsizexchunks; x++)
             {
-                ischunkready.SetChunkDirty(v.x, v.y, v.z, true);
+                for (int y = 0; y < mapsizeychunks; y++)
+                {
+                    for (int z = 0; z < mapsizezchunks; z++)
+                    {
+                       // try
+                       // {
+                            ischunkready.SetChunkDirty(x, y, z, true);
+                        //}
+                        //catch { }
+                    }
+                }
             }
             return;
         }
