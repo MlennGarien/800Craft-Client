@@ -116,34 +116,6 @@ namespace ManicDigger
         {
             return l.GetEnumerator().MoveNext();
         }
-        public static T First<T>(IEnumerable<T> l)
-        {
-            var e = l.GetEnumerator();
-            e.MoveNext();
-            return e.Current;
-        }
-        public static int Count<T>(IEnumerable<T> l)
-        {
-            int count = 0;
-            foreach (T v in l)
-            {
-                count++;
-            }
-            return count;
-        }
-        public static IEnumerable<T> Take<T>(IEnumerable<T> l, int n)
-        {
-            int i = 0;
-            foreach (var v in l)
-            {
-                if (i >= n)
-                {
-                    yield break;
-                }
-                yield return v;
-                i++;
-            }
-        }
     }
     public interface ITerrainInfo
     {
@@ -156,202 +128,7 @@ namespace ManicDigger
         float LightMaxValue();
     }
     
-    public class DirtyChunks
-    {
-        [Inject]
-        public IMapStorage mapstorage;
-        [Inject]
-        public IFrustumCulling frustum;
-        public int bigchunksize = 4;
-        public int chunksize = 16;
-        public int chunkdrawdistance = 16;
-        public int chunkdrawdistance_z = 4;
-
-        public int mapsizexchunksbig;
-        public int mapsizeychunksbig;
-        public int mapsizezchunksbig;
-        public int mapsizexchunks;
-        public int mapsizeychunks;
-        public int mapsizezchunks;
-        public bool[, ,] big;
-        public bool[, ,] small;
-        int bigchunkdrawdistance { get { return Math.Max(1, chunkdrawdistance / bigchunksize); } }
-        int bigchunkdrawdistance_z { get { return Math.Max(1, chunkdrawdistance_z / bigchunksize); } }
-        public void Start()
-        {
-            mapsizexchunks = 1024 / chunksize;
-            mapsizeychunks = 1024 / chunksize;
-            mapsizezchunks = 1024 / chunksize;
-            mapsizexchunksbig = 1024 / bigchunksize;
-            mapsizeychunksbig = 1024 / bigchunksize;
-            mapsizezchunksbig = 1024 / bigchunksize;
-            small = new bool[mapsizexchunks, mapsizeychunks, mapsizezchunks];
-            big = new bool[mapsizexchunksbig, mapsizeychunksbig, mapsizezchunksbig];
-        }
-        public Vector3i? NearestDirty(int x, int y, int z, bool must_be_in_frustum)
-        {
-            Vector3i[] chunksnear = ChunksNear();
-            int xb = x / bigchunksize;
-            int yb = y / bigchunksize;
-            int zb = z / bigchunksize;
-            for (int i = 0; i < chunksnear.Length; i++)
-            {
-                Vector3i v = chunksnear[i];
-                int vx = v.x + xb;
-                int vy = v.y + yb;
-                int vz = v.z + zb;
-                if (!IsValidBigChunkPosition(vx, vy, vz))
-                {
-                    continue;
-                }
-                if (big[vx, vy, vz])
-                {
-                    if (must_be_in_frustum)
-                    {
-                        if (!IsBigChunkInFrustum(vx, vy, vz))
-                        {
-                            continue;
-                        }
-                    }
-                    Vector3i nearest = new Vector3i();
-                    int nearest_dist = int.MaxValue;
-                    for (int xx = 0; xx < bigchunksize; xx++)
-                    {
-                        for (int yy = 0; yy < bigchunksize; yy++)
-                        {
-                            for (int zz = 0; zz < bigchunksize; zz++)
-                            {
-                                int curx = vx * bigchunksize + xx;
-                                int cury = vy * bigchunksize + yy;
-                                int curz = vz * bigchunksize + zz;
-                                if (small[curx, cury, curz])
-                                {
-                                    if (must_be_in_frustum && (!IsSmallChunkInFrustum(curx, cury, curz)))
-                                    {
-                                        continue;
-                                    }
-                                    int curdist = TerrainRenderer.DistanceSquared(x, y, z, curx, cury, curz);
-                                    if (curdist < nearest_dist)
-                                    {
-                                        nearest_dist = curdist;
-                                        nearest = new Vector3i(curx, cury, curz);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (TerrainRenderer.DistanceSquared(nearest.x, nearest.y, nearest.z, x, y, z)
-                        > (chunkdrawdistance) * (chunkdrawdistance))
-                    {
-                        if (!must_be_in_frustum)
-                        {
-                            return null;
-                        }
-                        continue;
-                    }
-
-                    if (nearest_dist != int.MaxValue)
-                    {
-                        return nearest;
-                    }
-                }
-            }
-            return null;
-        }
-        private bool IsSmallChunkInFrustum(int x, int y, int z)
-        {
-            return frustum.SphereInFrustum(x * chunksize + chunksize / 2,
-                           z * chunksize + chunksize / 2,
-                           y * chunksize + chunksize / 2,
-                           bigchunksize);
-        }
-        private bool IsBigChunkInFrustum(int vx, int vy, int vz)
-        {
-            return frustum.SphereInFrustum(vx * bigchunksize * chunksize + chunksize * bigchunksize / 2,
-                                    vz * bigchunksize * chunksize + chunksize * bigchunksize / 2,
-                                    vy * bigchunksize * chunksize + chunksize * bigchunksize / 2,
-                                    bigchunksize * chunksize);
-        }
-        private bool IsValidBigChunkPosition(int xx, int yy, int zz)
-        {
-            return xx >= 0 && yy >= 0 && zz >= 0
-                && xx < mapsizexchunksbig
-                && yy < mapsizeychunksbig
-                && zz < mapsizezchunksbig;
-        }
-        private bool IsValidChunkPosition(int xx, int yy, int zz)
-        {
-            return xx >= 0 && yy >= 0 && zz >= 0
-                && xx < mapsizexchunks
-                && yy < mapsizeychunks
-                && zz < mapsizezchunks;
-        }
-        Vector3i[] chunksnear;
-        int lastchunkdrawdistance = 0;
-        Vector3i[] ChunksNear()
-        {
-            if (chunksnear == null || lastchunkdrawdistance != bigchunkdrawdistance)
-            {
-                lastchunkdrawdistance = bigchunkdrawdistance;
-                List<Vector3i> l = new List<Vector3i>();
-                for (int x = -bigchunkdrawdistance; x <= bigchunkdrawdistance; x++)
-                {
-                    for (int y = -bigchunkdrawdistance; y <= bigchunkdrawdistance; y++)
-                    {
-                        for (int z = -bigchunkdrawdistance_z; z < bigchunkdrawdistance_z; z++)
-                        {
-                            l.Add(new Vector3i(x, y, z));
-                        }
-                    }
-                }
-                l.Sort((a, b) => { return (a.x * a.x + a.y * a.y + a.z * a.z).CompareTo(b.x * b.x + b.y * b.y + b.z * b.z); });
-                chunksnear = l.ToArray();
-            }
-            return chunksnear;
-        }
-        #region IIsChunkReady Members
-        public bool IsChunkReady(int x, int y, int z)
-        {
-            return IsChunkDirty(x, y, z);
-        }
-        public bool IsChunkDirty(int x, int y, int z)
-        {
-            return small[x, y, z];
-        }
-        public void SetChunkDirty(int x, int y, int z, bool dirty)
-        {
-            small[x, y, z] = dirty;
-            if (dirty)
-            {
-                big[x / bigchunksize, y / bigchunksize, z / bigchunksize] = true;
-            }
-            else
-            {
-                for (int xx = 0; xx < bigchunksize; xx++)
-                {
-                    for (int yy = 0; yy < bigchunksize; yy++)
-                    {
-                        for (int zz = 0; zz < bigchunksize; zz++)
-                        {
-                            if (small[(x / bigchunksize) * bigchunksize + xx, (y / bigchunksize) * bigchunksize + yy, (z / bigchunksize) * bigchunksize + zz])
-                            {
-                                goto end;
-                            }
-                        }
-                    }
-                }
-                big[x / bigchunksize, y / bigchunksize, z / bigchunksize] = false;
-            }
-        end:
-            ;
-        }
-        #endregion
-        #region IIsChunkReady Members
-        public void SetAllChunksNotDirty()
-        {
-        }
-        #endregion
-    }
+    
     /// <summary>
     /// </summary>
     /// <remarks>
@@ -423,13 +200,17 @@ namespace ManicDigger
                 UseTerrainTextureAtlas2d(atlas2d);
             }
             updateThreadRunning++;
+            SetMapSizes();
+            new Thread(UpdateThreadStart).Start();
+        }
+        public void SetMapSizes()
+        {
             this.mapsizex = mapstorage.MapSizeX;
             this.mapsizey = mapstorage.MapSizeY;
             this.mapsizez = mapstorage.MapSizeZ;
             this.mapsizexchunks = mapstorage.MapSizeX / chunksize;
             this.mapsizeychunks = mapstorage.MapSizeY / chunksize;
             this.mapsizezchunks = mapstorage.MapSizeZ / chunksize;
-            new Thread(UpdateThreadStart).Start();
         }
         int mapsizex;//cache
         int mapsizey;
@@ -511,7 +292,7 @@ namespace ManicDigger
             ischunkready.chunkdrawdistance = chunkdrawdistance;
             ischunkready.chunkdrawdistance_z = chunkdrawdistance; //8
             bool update_behind = (sometimes_update_behind_counter++ % sometimes_update_behind_every == 0);
-            Vector3i? v = ischunkready.NearestDirty(pdx, pdy, pdz, this.updated && (!update_behind));
+            Vector3i? v = ischunkready.NearestDirty(pdx, pdy, pdz);
             if (v != null)
             {
                 bool updated = UpdateChunk(v.Value.x, v.Value.y, v.Value.z);
@@ -542,23 +323,27 @@ namespace ManicDigger
         bool updated = true;
         private bool UpdateChunk(int x, int y, int z)
         {
-            if (!ischunkready.IsChunkDirty(x, y, z))
+            try
             {
-                return false;
+                if (!ischunkready.IsChunkDirty(x, y, z))
+                {
+                    return false;
+                }
+                ischunkready.SetChunkDirty(x, y, z, false);
+                //if any chunk around is dirty too, update it at the same time. 
+                //(no flicker on chunk boundaries)            
+                List<Vector3i> l = new List<Vector3i>();
+                l.Add(new Vector3i(x, y, z));
+                if (IsValidChunkPosition(x - 1, y, z) && ischunkready.IsChunkDirty(x - 1, y, z)) { l.Add(new Vector3i(x - 1, y, z)); ischunkready.SetChunkDirty(x - 1, y, z, false); }
+                if (IsValidChunkPosition(x + 1, y, z) && ischunkready.IsChunkDirty(x + 1, y, z)) { l.Add(new Vector3i(x + 1, y, z)); ischunkready.SetChunkDirty(x + 1, y, z, false); }
+                if (IsValidChunkPosition(x, y - 1, z) && ischunkready.IsChunkDirty(x, y - 1, z)) { l.Add(new Vector3i(x, y - 1, z)); ischunkready.SetChunkDirty(x, y - 1, z, false); }
+                if (IsValidChunkPosition(x, y + 1, z) && ischunkready.IsChunkDirty(x, y + 1, z)) { l.Add(new Vector3i(x, y + 1, z)); ischunkready.SetChunkDirty(x, y + 1, z, false); }
+                if (IsValidChunkPosition(x, y, z - 1) && ischunkready.IsChunkDirty(x, y, z - 1)) { l.Add(new Vector3i(x, y, z - 1)); ischunkready.SetChunkDirty(x, y, z - 1, false); }
+                if (IsValidChunkPosition(x, y, z + 1) && ischunkready.IsChunkDirty(x, y, z + 1)) { l.Add(new Vector3i(x, y, z + 1)); ischunkready.SetChunkDirty(x, y, z + 1, false); }
+                UpdateChunks(l.ToArray());
+                return true;
             }
-            ischunkready.SetChunkDirty(x, y, z, false);
-            //if any chunk around is dirty too, update it at the same time. 
-            //(no flicker on chunk boundaries)            
-            List<Vector3i> l = new List<Vector3i>();
-            l.Add(new Vector3i(x, y, z));
-            if (IsValidChunkPosition(x - 1, y, z) && ischunkready.IsChunkDirty(x - 1, y, z)) { l.Add(new Vector3i(x - 1, y, z)); ischunkready.SetChunkDirty(x - 1, y, z, false); }
-            if (IsValidChunkPosition(x + 1, y, z) && ischunkready.IsChunkDirty(x + 1, y, z)) { l.Add(new Vector3i(x + 1, y, z)); ischunkready.SetChunkDirty(x + 1, y, z, false); }
-            if (IsValidChunkPosition(x, y - 1, z) && ischunkready.IsChunkDirty(x, y - 1, z)) { l.Add(new Vector3i(x, y - 1, z)); ischunkready.SetChunkDirty(x, y - 1, z, false); }
-            if (IsValidChunkPosition(x, y + 1, z) && ischunkready.IsChunkDirty(x, y + 1, z)) { l.Add(new Vector3i(x, y + 1, z)); ischunkready.SetChunkDirty(x, y + 1, z, false); }
-            if (IsValidChunkPosition(x, y, z - 1) && ischunkready.IsChunkDirty(x, y, z - 1)) { l.Add(new Vector3i(x, y, z - 1)); ischunkready.SetChunkDirty(x, y, z - 1, false); }
-            if (IsValidChunkPosition(x, y, z + 1) && ischunkready.IsChunkDirty(x, y, z + 1)) { l.Add(new Vector3i(x, y, z + 1)); ischunkready.SetChunkDirty(x, y, z + 1, false); }
-            UpdateChunks(l.ToArray());
-            return true;
+            catch { return true; }
         }
         private bool InFrustum(int x, int y, int z)
         {
@@ -692,6 +477,9 @@ namespace ManicDigger
         }
         public void UpdateAllTiles()
         {
+            this.SetMapSizes();
+            batcher.Clear();
+            batchedchunks = new int[mapsizex, mapsizey, mapsizez][];
             ischunkready.Start();
             for (int x = 0; x < mapsizexchunks; x++)
             {
@@ -699,11 +487,14 @@ namespace ManicDigger
                 {
                     for (int z = 0; z < mapsizezchunks; z++)
                     {
-                       // try
-                       // {
-                            ischunkready.SetChunkDirty(x, y, z, true);
-                        //}
-                        //catch { }
+                        try
+                        {
+                            if (!ischunkready.IsChunkDirty(x,y,z))
+                            {
+                                ischunkready.SetChunkDirty(x, y, z, true);
+                            }
+                        }
+                        catch { }
                     }
                 }
             }

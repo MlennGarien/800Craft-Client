@@ -10,7 +10,7 @@ namespace ManicDigger
 {
     public class UpdateChecker
     {
-        public static int Version = 102;
+        public static int Version = 103;
         public static decimal ClientVersion = (decimal)Version / 100;
         public static int WebVersion = 0;
         public static string DownloadLocation = null;

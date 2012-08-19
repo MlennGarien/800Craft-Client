@@ -290,10 +290,11 @@ namespace ManicDigger
                                             }
                                         }
                                     }
-                                    Map.Map.UseMap(receivedmap);
                                     Map.Map.MapSizeX = receivedmap.GetUpperBound(0) + 1;
                                     Map.Map.MapSizeY = receivedmap.GetUpperBound(1) + 1;
                                     Map.Map.MapSizeZ = receivedmap.GetUpperBound(2) + 1;
+                                    Map.Map.UseMap(receivedmap);
+                                    
                                     Map.UpdateAllTiles();
                                 }
                                 receivedMapStream.Flush();

@@ -83,10 +83,10 @@ namespace ManicDigger
         public IDictionary<int, Player> Players { get { return players; } set { players = value; } }
         public GameMinecraft()
         {
-            map.Map = new byte[256, 256, 256];
-            map.MapSizeX = 256;
-            map.MapSizeY = 256;
-            map.MapSizeZ = 256;
+            map.Map = new byte[128, 128, 64];
+            map.MapSizeX = 128;
+            map.MapSizeY = 128;
+            map.MapSizeZ = 64;
         }
         #region IMapStorage Members
         public void SetBlock(int x, int y, int z, int tileType)
@@ -117,7 +117,6 @@ namespace ManicDigger
             int x = map.MapSizeX / 2;
             int y = map.MapSizeY / 2;
             playerpositionspawn = new Vector3(x + 0.5f, MapUtil.blockheight(map, data.TileIdEmpty, x, y), y + 0.5f);
-            terrain.UpdateAllTiles();
         }
         #endregion
         #region IMapStorage Members
@@ -134,6 +133,7 @@ namespace ManicDigger
             MapSizeY = map.GetUpperBound(1) + 1;
             MapSizeZ = map.GetUpperBound(2) + 1;
             shadows.ResetShadows();
+            terrain.UpdateAllTiles();
         }
         #endregion
         MapManipulator mapmanipulator = new MapManipulator();
@@ -305,7 +305,7 @@ namespace ManicDigger
             data[(int)TileTypeMinecraft.Stone] = new TileTypeData() { Buildable = true, AllTextures = 1 };
             data[(int)TileTypeMinecraft.Grass] = new TileTypeData()
             {
-                Buildable = false,
+                Buildable = true,
                 TextureBottom = 2,
                 TextureSide = 3,
                 TextureTop = 0,
@@ -378,21 +378,7 @@ namespace ManicDigger
             data[(int)TileTypeMinecraft.Obsidian] = new TileTypeData() { Buildable = true, AllTextures = (2 * 16) + 5 };//49
         }
         TileTypeData[] data = new TileTypeData[256];
-        /*
-            if (blockUp == 0 || blockUp == 8 || blockUp == 9 ||
-                blockUp == 10 || blockUp == 11 || blockUp == 18 ||
-                blockUp == 44 || blockUp == 6 || blockUp == 37 ||
-                blockUp == 38 || blockUp == 39 || blockUp == 40 ||
-                blockLeft == 0 || blockLeft == 8 || blockLeft == 9 ||
-                blockLeft == 10 || blockLeft == 11 || blockLeft == 18 ||
-                blockLeft == 44 || blockLeft == 6 || blockLeft == 37 ||
-                blockLeft == 38 || blockLeft == 39 || blockLeft == 40 ||
-                blockRight == 0 || blockRight == 8 || blockRight == 9 ||
-                blockRight == 10 || blockRight == 11 || blockRight == 18 ||
-                blockRight == 44 || blockRight == 6 || blockRight == 37 ||
-                blockRight == 38 || blockRight == 39 || blockRight == 40)
-                Blend(block);
-        */
+        
         public bool IsTransparentTile(int tileType)
         {
             return
@@ -404,7 +390,7 @@ namespace ManicDigger
                 //|| tileType == (byte)TileTypeMinecraft.StationaryLava
                 || tileType == (byte)TileTypeMinecraft.YellowFlowerDecorations
                 || tileType == (byte)TileTypeMinecraft.RedRoseDecorations
-                //|| tileType == (byte)TileTypeMinecraft.Leaves
+                || tileType == (byte)TileTypeMinecraft.Leaves
                 || tileType == (byte)TileTypeMinecraft.Glass
                 || tileType == (byte)TileTypeMinecraft.RedMushroom
                 || tileType == (byte)TileTypeMinecraft.BrownMushroom
@@ -486,7 +472,7 @@ namespace ManicDigger
         {
             return blocktype == TileIdEmpty
                 || IsBlockFlower(blocktype)
-                //|| blocktype == (int)TileTypeMinecraft.Leaves
+                || blocktype == (int)TileTypeMinecraft.Leaves
                 || blocktype == (int)TileTypeMinecraft.Glass
                 || IsWaterTile(blocktype);
         }
