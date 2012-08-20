@@ -521,9 +521,10 @@ namespace ManicDigger
                 if (x / chunksize != xx / chunksize
                     || y / chunksize != yy / chunksize
                     || z / chunksize != zz / chunksize)
-                {
-                    ischunkready.SetChunkDirty(x / chunksize, y / chunksize, z / chunksize, true);
-                }
+                    if (IsValidChunkPosition(x / chunksize, y / chunksize, z / chunksize))
+                    {
+                        ischunkready.SetChunkDirty(x / chunksize, y / chunksize, z / chunksize, true);
+                    }
             }
             return;
         }
