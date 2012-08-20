@@ -202,7 +202,6 @@ namespace ManicDigger
             if (dirty)
             {
                 big[x / bigchunksize, y / bigchunksize, z / bigchunksize] = true;
-                return;
             }
             else
             {
