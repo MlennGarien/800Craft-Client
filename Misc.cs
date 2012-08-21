@@ -74,6 +74,7 @@ namespace ManicDigger
             this.G = (byte)G;
             this.B = (byte)B;
         }
+
         public FastColor(Color c)
         {
             this.A = c.A;
@@ -191,19 +192,22 @@ namespace ManicDigger
             {
                 int size = gzip.Length;
                 byte[] buffer = new byte[size];
-                using (MemoryStream memory = new MemoryStream())
+                lock (buffer)
                 {
-                    int count = 0;
-                    do
+                    using (MemoryStream memory = new MemoryStream())
                     {
-                        count = stream.Read(buffer, 0, size);
-                        if (count > 0)
+                        int count = 0;
+                        do
                         {
-                            memory.Write(buffer, 0, count);
+                            count = stream.Read(buffer, 0, size);
+                            if (count > 0)
+                            {
+                                memory.Write(buffer, 0, count);
+                            }
                         }
+                        while (count > 0);
+                        return memory.ToArray();
                     }
-                    while (count > 0);
-                    return memory.ToArray();
                 }
             }
         }

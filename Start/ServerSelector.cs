@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.Net;
 using System.IO;
-using System.Security.Cryptography;
-using System.Runtime.Serialization;
+using System.IO.Packaging;
+using Ionic.Zip;
 
 namespace ManicDigger
 {
@@ -17,9 +15,84 @@ namespace ManicDigger
         public ServerSelector()
         {
             InitializeComponent();
+            if (!CheckJarExists())
+            {
+                GetAndExtractJar();
+            }
         }
+
         public LoginClientMinecraft c;
         public List<ServerInfo> items;
+
+        string JarFile = 
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + 
+            "/Temp/www.minecraft.net/Minecraft/minecraft.jar";
+        string DownloadLocationJar = "data";
+        string TargetDirectory = "data/minecraft";
+        string JarUrl = "https://s3.amazonaws.com/MinecraftDownload/classic/minecraft.jar";
+
+        public bool CheckJarExists()
+        {
+            if (Directory.Exists("data/minecraft"))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        private void GetAndExtractJar()
+        {
+            if (MessageBox.Show("800Craft client requires the minecraft.jar. Would you like us to get it?", "Resource Requirement", MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.Yes)
+            {
+                if (!File.Exists(JarFile))
+                {
+                    if (MessageBox.Show("We couldn't find the minecraft.jar on your computer. \nIs it ok to download it from minecraft.net?", "File not found", MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        //download the .jar and put it in data
+                        using (WebClient Client = new WebClient())
+                        {
+                            Client.DownloadFile(JarUrl, "data/minecraft.jar");
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("The minecraft.jar is required and 800Craft Client cannot run without it");
+                        Environment.Exit(1);
+                    }
+                }
+                if (!File.Exists(JarFile))
+                {
+                    JarFile = "data/minecraft.jar";
+                }
+                using (ZipFile zip = ZipFile.Read(JarFile))
+                {
+                    foreach (ZipEntry e in zip)
+                    {
+                        e.Extract(TargetDirectory, ExtractExistingFileAction.OverwriteSilently);// => overwrite existing files
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("The minecraft.jar is required and 800Craft Client cannot run without it");
+                Environment.Exit(1);
+            }
+        }
+        
+
+        private static string CreateFilenameFromUri(Uri uri)
+        {
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            StringBuilder sb = new StringBuilder(uri.OriginalString.Length);
+            foreach (char c in uri.OriginalString)
+            {
+                sb.Append(Array.IndexOf(invalidChars, c) < 0 ? c : '_');
+            }
+            return sb.ToString();
+        }
+        
 
         private void ServerSelector_Load(object sender, EventArgs e)
         {

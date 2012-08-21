@@ -117,7 +117,6 @@ namespace ManicDigger
             w.config3d = config3d;
             w.mapManipulator = mapManipulator;
             w.terrain = terrainDrawer;
-
             bool IsMono = Type.GetType("Mono.Runtime") != null;
             terrainDrawer.textureatlasconverter = new TextureAtlasConverter();
             if (IsMono)

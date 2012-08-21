@@ -22,3 +22,4 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.Properties.Resources.resources
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\Ionic.Zip.dll

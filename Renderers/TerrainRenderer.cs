@@ -195,7 +195,7 @@ namespace ManicDigger
             }
             started = true;
             GL.Enable(EnableCap.Texture2D);
-            using (var atlas2d = new Bitmap(getfile.GetFile("terrain.png")))
+            using (var atlas2d = new Bitmap(getfile.GetFile("minecraft/terrain.png")))
             {
                 UseTerrainTextureAtlas2d(atlas2d);
             }
@@ -592,10 +592,10 @@ namespace ManicDigger
             if (watertexture == null)
             {
                 try
-                { watertexture = the3d.LoadTexture(getfile.GetFile("water.png")); }
+                { watertexture = the3d.LoadTexture(getfile.GetFile("minecraft/water.png")); }
                 catch (FileNotFoundException)
                 {
-                    Console.WriteLine("water.png not found."); waternotfoundwritten = true; return;
+                    Console.WriteLine("minecraft/water.png not found."); waternotfoundwritten = true; return;
                 }
             }
             GL.BindTexture(TextureTarget.Texture2D, watertexture.Value);
@@ -616,10 +616,10 @@ namespace ManicDigger
             if (rocktexture == null)
             {
                 try
-                { rocktexture = the3d.LoadTexture(getfile.GetFile("rock.png")); }
+                { rocktexture = the3d.LoadTexture(getfile.GetFile("minecraft/rock.png")); }
                 catch (FileNotFoundException)
                 {
-                    Console.WriteLine("rock.png not found."); rocknotfoundwritten = true; return;
+                    Console.WriteLine("minecraft/rock.png not found."); rocknotfoundwritten = true; return;
                 }
             }
             GL.BindTexture(TextureTarget.Texture2D, rocktexture.Value);

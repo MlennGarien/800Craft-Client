@@ -18,6 +18,7 @@ namespace ManicDigger
         public IGameData data;
         [Inject]
         public IShadows shadows;
+
         public void OnPick(Vector3 blockposnew, Vector3 blockposold, Vector3 pos3d, bool right)
         {
             var mode = right ? BlockSetMode.Create : BlockSetMode.Destroy;

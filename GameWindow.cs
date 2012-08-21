@@ -624,7 +624,9 @@ namespace ManicDigger
         [Inject]
         public ICharacterRenderer characterdrawer { get; set; }
         [Inject]
-        public ICurrentShadows currentshadows;
+        public ICurrentShadows currentshadows;      
+        [Inject]
+        public IShadows shadows;
 
         const float rotation_speed = 180.0f * 0.05f;
         //float angle;
@@ -658,7 +660,7 @@ namespace ManicDigger
         const bool ENABLE_FULLSCREEN = false;
         public ManicDiggerGameWindow()
             : base(1000, 550, GraphicsMode.Default, "",
-                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Adaptive;  }
+                ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Adaptive; }
         The3d the3d = new The3d();
         public int LoadTexture(string filename)
         {
@@ -843,6 +845,7 @@ namespace ManicDigger
                         {
                             server = "http://www.minecraft.net/play.jsp?server=" + server;
                         }
+                        LoadPassword();
                         ConnectToInternetGame(username, pass, server);
                         return;
                     }
@@ -1081,6 +1084,12 @@ namespace ManicDigger
                 
                 if (Keyboard[OpenTK.Input.Key.Escape])
                 {
+                    if (GuiTyping == TypingState.Typing)
+                    {
+                        GuiTyping = TypingState.None;
+                        GuiStateBackToGame();
+                        return;
+                    }
                     guistate = GuiState.EscapeMenu;
                     menustate = new MenuState();
                     FreeMouse = true;
@@ -1167,20 +1176,31 @@ namespace ManicDigger
                     string defaultserverfile = "defaultserver.txt";
                     if (File.Exists(defaultserverfile))
                     {
-                        ConnectToInternetGame(username, pass, File.ReadAllText(defaultserverfile));
+                        string Text = File.ReadAllText(defaultserverfile);
+                        if (Text == null || !Text.StartsWith("http://"))
+                        {
+                            Log("Invalid server url in defaultserver.txt.");
+                            return;
+                        }
+                        LoadPassword();
+                        ConnectToInternetGame(username, pass, Text);
                         Log("Connected to default server.");
                     }
                     else
                     {
                         Log(string.Format("File {0} not found.", defaultserverfile));
+                        File.Create("defaultserver.text");
+                        Log(string.Format("Created file {0}, you can add your favorite server url in it!", defaultserverfile));
                     }
                 }
                 if (e.Key == OpenTK.Input.Key.Z)
                 {
+                    player.movedz = 0;
                     ENABLE_FREEMOVE = !ENABLE_FREEMOVE;
                     if (ENABLE_FREEMOVE) { Log("Freemove enabled."); }
                     else { Log("Freemove disabled."); }
                 }
+                
                 if (e.Key == OpenTK.Input.Key.F4)
                 {
                     ENABLE_NOCLIP = !ENABLE_NOCLIP;
@@ -1430,6 +1450,21 @@ namespace ManicDigger
         public string username = "gamer1";
         string pass = "12345";
         public string mppassword;
+
+        void LoadPassword()
+        {
+            string filename = GetMinecraftPasswordFilePath();
+            if (File.Exists(filename))
+            {
+                string[] lines = File.ReadAllLines(filename);
+                username = lines[0];
+                pass = lines[1];
+            }
+        }
+        private static string GetMinecraftPasswordFilePath()
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "MCP.data");
+        }
 
         private void ConnectToInternetGame(string qusername, string qpass, string qgameurl)
         {
@@ -1939,7 +1974,47 @@ namespace ManicDigger
             {
                 //temp noclip goes here plox
             }
+            if (ENABLE_FREEMOVE && GuiTyping == TypingState.None)
+            {
+                float speed = 0.1F;
+                if (Keyboard[OpenTK.Input.Key.ShiftLeft]){
+                    speed = 0.5F;
+                }
+                if (Keyboard[OpenTK.Input.Key.ControlLeft]){
+                    speed = 0.3F;
+                }
+                if (Keyboard[OpenTK.Input.Key.Q]){
+                    Vector3 Position = new Vector3(player.playerposition.X, (float)(player.playerposition.Y + speed), player.playerposition.Z);
+                    if(CheckClippingQE(Position)){
+                        player.playerposition = Position;
+                        player.movedz = 0;
+                    }
+                }
+                if (Keyboard[OpenTK.Input.Key.E]){
+                    Vector3 Position = new Vector3(player.playerposition.X, (float)(player.playerposition.Y - speed), player.playerposition.Z);
+                    if(CheckClippingQE(Position))
+                    {
+                        player.playerposition = Position;
+                    }
+                }
+            }
             return movespeednow;
+        }
+
+        bool CheckClippingQE(Vector3 NewPosition)
+        {
+            bool playertileempty = IsTileEmptyForPhysics(
+                        (int)ToMapPos(NewPosition).X,
+                        (int)ToMapPos(NewPosition).Y,
+                        (int)ToMapPos(NewPosition).Z);
+            bool playertileemptyclose = IsTileEmptyForPhysicsClose(
+                        (int)ToMapPos(NewPosition).X,
+                        (int)ToMapPos(NewPosition).Y,
+                        (int)ToMapPos(NewPosition).Z);
+            if (playertileemptyclose || playertileempty) 
+                return true;
+            else 
+                return false;
         }
         int? BlockUnderPlayer()
         {
@@ -2300,7 +2375,7 @@ namespace ManicDigger
         {
             GL.ClearColor(guistate == GuiState.MapLoading ? Color.Black : clearcolor);
             base.OnRenderFrame(e);
-            if (terrain.DrawDistance < 256)
+            if (terrain.DrawDistance < 513)
             {
                 SetFog();
             }
@@ -2370,29 +2445,10 @@ namespace ManicDigger
                 }
 
                 DrawCharacters((float)e.Time);
-                if (ENABLE_DRAW_TEST_CHARACTER)
-                {
-                    characterdrawer.DrawCharacter(a, game.PlayerPositionSpawn, 0, 0, true, (float)dt, GetPlayerTexture(255), new AnimationHint());
-                }
                 DrawPlayers((float)e.Time);
                 foreach (IModelToDraw m in game.Models)
                 {
-                    if (m.Id == selectedmodelid)
-                    {
-                        //GL.Color3(Color.Red);
-                    }
                     m.Draw((float)e.Time);
-                    //GL.Color3(Color.White);
-                    /*
-                    GL.Begin(BeginMode.Triangles);
-                    foreach (var tri in m.TrianglesForPicking)
-                    {
-                        GL.Vertex3(tri.PointA);
-                        GL.Vertex3(tri.PointB);
-                        GL.Vertex3(tri.PointC);
-                    }
-                    GL.End();
-                    */
                 }
                 if ((!ENABLE_TPP_VIEW) && ENABLE_DRAW2D)
                 {
@@ -2405,17 +2461,17 @@ namespace ManicDigger
             //OnResize(new EventArgs());
             SwapBuffers();
         }
-         private void SetFog()
+        private void SetFog()
         {
             float density = 0.3f;
             float[] fogColor;
-            if (SkySphereNight)
+            if (!SkySphereNight)
             {
-                fogColor = new[] { 0f, 0f, 0f, 1.0f };
+                fogColor = new[] { (float)clearcolor.R / 256, (float)clearcolor.G / 256, (float)clearcolor.B / 256, (float)clearcolor.A / 256 };
             }
             else
             {
-                fogColor = new[] { (float)clearcolor.R / 256, (float)clearcolor.G / 256, (float)clearcolor.B / 256, (float)clearcolor.A / 256 };
+                fogColor = new[] { 0f, 0f, 0f, 1.0f };
             }
             GL.Enable(EnableCap.Fog);
             GL.Hint(HintTarget.FogHint, HintMode.Nicest);
@@ -2435,7 +2491,7 @@ namespace ManicDigger
         int screenshotflash;
         int playertexturedefault = -1;
         Dictionary<string, int> playertextures = new Dictionary<string, int>();
-        public string playertexturedefaultfilename = "mineplayer.png";
+        public string playertexturedefaultfilename = "minecraft/char.png";
         private int GetPlayerTexture(int playerid)
         {
             if (playertexturedefault == -1)
@@ -2488,7 +2544,12 @@ namespace ManicDigger
             GL.PushMatrix();
             GL.Translate(LocalPlayerPosition);
             GL.Color3(Color.White);
-            GL.BindTexture(TextureTarget.Texture2D, SkySphereNight ? skyspherenighttexture : skyspheretexture);
+            int texture = SkySphereNight ? skyspherenighttexture : skyspheretexture;
+            if (!SkySphereNight)
+            {
+                texture = skyspheretexture;
+            }
+            GL.BindTexture(TextureTarget.Texture2D,texture );
             GL.Begin(BeginMode.Triangles);
             for (int i = 0; i < elements.Length; i++)
             {
@@ -2768,7 +2829,7 @@ namespace ManicDigger
                     (menustate.selected == 1 ? Color.Red : Color.White)
                     : (menustate.selected == 1 ? Color.Red : Color.Gray));
                 Draw2dText(exitstr, xcenter(TextSize(exitstr, fontsize).Width), starty + textheight * 2, 20, menustate.selected == 2 ? Color.Red : Color.White);
-                Draw2dBitmapFile("manicdigger.png", xcenter(565), 50, 565, 119);
+                //Draw2dBitmapFile("manicdigger.png", xcenter(565), 50, 565, 119);
                 //DrawMouseCursor();
             }
         }
@@ -2907,7 +2968,12 @@ namespace ManicDigger
         }
         private void DrawConnectedPlayersList()
         {
-            List<string> l = new List<string>(network.ConnectedPlayers());
+            List<string> l = new List<string>();
+            foreach (var k in clients.Players)
+            {
+                l.Add(k.Value.Name);
+            }
+            
             for (int i = 0; i < l.Count; i++)
             {
                 Draw2dText(l[i], 200 + 200 * (i / 8), 200 + 30 * i, chatfontsize, Color.White);
@@ -3079,6 +3145,7 @@ namespace ManicDigger
             }
         }
         int inventorysinglesize = 40;
+        Vector2 SelectedPos = new Vector2();
         void DrawInventory()
         {
             List<int> buildable = Buildable;
@@ -3097,6 +3164,7 @@ namespace ManicDigger
                     Draw2dBitmapFile(Path.Combine("gui", "activematerial.png"),
                         xcenter(inventorysinglesize * inventorysize) + x * inventorysinglesize,
                         ycenter(inventorysinglesize * inventorysize) + y * inventorysinglesize, inventorysinglesize, inventorysinglesize);
+                    SelectedPos = new Vector2(x, y);
                 }
                 if (ENABLE_FINITEINVENTORY)
                 {
@@ -3131,7 +3199,20 @@ namespace ManicDigger
                 var sel = InventoryGetSelected();
                 if (sel != null)
                 {
-                    materialSlots[activematerial] = sel.Value;
+                    bool picked = false;
+                    int newBlock = data.GetTileTextureIdForInventory(sel.Value);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        if (newBlock == data.GetTileTextureIdForInventory((int)materialSlots[i]))
+                        {
+                            activematerial = i;
+                            picked = true;
+                        }
+                    }
+                    if (!picked)
+                    {
+                        materialSlots[activematerial] = sel.Value;
+                    }
                     GuiStateBackToGame();
                 }
                 mouseleftclick = false;
@@ -3446,11 +3527,11 @@ namespace ManicDigger
             }
             Draw2dTexture(textures[filename], x1, y1, width, height, null);
         }
-        void Draw2dTexture(int textureid, float x1, float y1, float width, float height, int? inAtlasId)
+        public void Draw2dTexture(int textureid, float x1, float y1, float width, float height, int? inAtlasId)
         {
             Draw2dTexture(textureid, x1, y1, width, height, inAtlasId, Color.White);
         }
-        void Draw2dTexture(int textureid, float x1, float y1, float width, float height, int? inAtlasId, Color color)
+        public void Draw2dTexture(int textureid, float x1, float y1, float width, float height, int? inAtlasId, Color color)
         {
             RectangleF rect;
             if (inAtlasId == null)
