@@ -10,6 +10,20 @@ using Ionic.Zip;
 
 namespace ManicDigger
 {
+    public class MyTextBox : System.Windows.Forms.TextBox
+    {
+        protected override void OnKeyDown(System.Windows.Forms.KeyEventArgs e)
+        {
+            if (e.Control && (e.KeyCode == System.Windows.Forms.Keys.A))
+            {
+                this.SelectAll();
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+            else
+                base.OnKeyDown(e);
+        }
+    }
     public partial class ServerSelector : Form
     {
         public ServerSelector()
@@ -27,13 +41,12 @@ namespace ManicDigger
         string JarFile = 
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + 
             "/Temp/www.minecraft.net/Minecraft/minecraft.jar";
-        string DownloadLocationJar = "data";
         string TargetDirectory = "data/minecraft";
         string JarUrl = "https://s3.amazonaws.com/MinecraftDownload/classic/minecraft.jar";
 
         public bool CheckJarExists()
         {
-            if (Directory.Exists("data/minecraft"))
+            if (Directory.Exists(TargetDirectory))
             {
                 return true;
             }
@@ -53,7 +66,15 @@ namespace ManicDigger
                         //download the .jar and put it in data
                         using (WebClient Client = new WebClient())
                         {
-                            Client.DownloadFile(JarUrl, "data/minecraft.jar");
+                            try
+                            {
+                                Client.DownloadFile(JarUrl, "data/minecraft.jar");
+                            }
+                            catch
+                            {
+                                MessageBox.Show("Could not retrieve minecraft.jar. \nCheck your internet connection.", "Error");
+                                Environment.Exit(1);
+                            }
                         }
                     }
                     else
@@ -79,18 +100,6 @@ namespace ManicDigger
                 MessageBox.Show("The minecraft.jar is required and 800Craft Client cannot run without it");
                 Environment.Exit(1);
             }
-        }
-        
-
-        private static string CreateFilenameFromUri(Uri uri)
-        {
-            char[] invalidChars = Path.GetInvalidFileNameChars();
-            StringBuilder sb = new StringBuilder(uri.OriginalString.Length);
-            foreach (char c in uri.OriginalString)
-            {
-                sb.Append(Array.IndexOf(invalidChars, c) < 0 ? c : '_');
-            }
-            return sb.ToString();
         }
         
 

@@ -34,9 +34,9 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.Button2 = new System.Windows.Forms.Button();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
-            this.textBox3 = new System.Windows.Forms.TextBox();
+            this.textBox3 = new MyTextBox();
             this.Label5 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.textBox2 = new MyTextBox();
             this.Label1 = new System.Windows.Forms.Label();
             this.tbpStudentOutput = new System.Windows.Forms.TabPage();
             this.ListBox1 = new System.Windows.Forms.DataGridView();
@@ -44,11 +44,11 @@
             this.Players = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.MaxPlayers = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.Url = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.textBox4 = new System.Windows.Forms.TextBox();
+            this.textBox4 = new MyTextBox();
             this.Label2 = new System.Windows.Forms.Label();
             this.Button4 = new System.Windows.Forms.Button();
             this.Button3 = new System.Windows.Forms.Button();
-            this.SearchBox = new System.Windows.Forms.TextBox();
+            this.SearchBox = new MyTextBox();
             this.Label3 = new System.Windows.Forms.Label();
             this.TabControl1.SuspendLayout();
             this.tbpStudentInfo.SuspendLayout();
@@ -84,7 +84,7 @@
             this.tbpStudentInfo.Location = new System.Drawing.Point(4, 30);
             this.tbpStudentInfo.Name = "tbpStudentInfo";
             this.tbpStudentInfo.Padding = new System.Windows.Forms.Padding(3);
-            this.tbpStudentInfo.Size = new System.Drawing.Size(443, 438);
+            this.tbpStudentInfo.Size = new System.Drawing.Size(443, 396);
             this.tbpStudentInfo.TabIndex = 0;
             this.tbpStudentInfo.Text = "Student Information";
             // 
@@ -99,6 +99,7 @@
             // 
             // progressBar1
             // 
+            this.progressBar1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
             this.progressBar1.Location = new System.Drawing.Point(134, 368);
             this.progressBar1.Name = "progressBar1";
             this.progressBar1.Size = new System.Drawing.Size(168, 33);
@@ -203,10 +204,14 @@
             this.MaxPlayers,
             this.Url});
             this.ListBox1.Location = new System.Drawing.Point(3, 108);
+            this.ListBox1.Margin = new System.Windows.Forms.Padding(4);
             this.ListBox1.MultiSelect = false;
             this.ListBox1.Name = "ListBox1";
             this.ListBox1.ReadOnly = true;
             this.ListBox1.RowHeadersVisible = false;
+            this.ListBox1.RowTemplate.DefaultCellStyle.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            this.ListBox1.RowTemplate.DefaultCellStyle.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.ListBox1.RowTemplate.Height = 26;
             this.ListBox1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.ListBox1.Size = new System.Drawing.Size(435, 279);
             this.ListBox1.TabIndex = 15;
@@ -346,16 +351,16 @@
         internal System.Windows.Forms.TabPage tbpStudentInfo;
         internal System.Windows.Forms.Button Button2;
         internal System.Windows.Forms.CheckBox checkBox1;
-        internal System.Windows.Forms.TextBox textBox3;
+        internal MyTextBox textBox3;
         internal System.Windows.Forms.Label Label5;
-        internal System.Windows.Forms.TextBox textBox2;
+        internal MyTextBox textBox2;
         internal System.Windows.Forms.Label Label1;
         internal System.Windows.Forms.TabPage tbpStudentOutput;
         internal System.Windows.Forms.Button Button4;
         internal System.Windows.Forms.Button Button3;
-        internal System.Windows.Forms.TextBox SearchBox;
+        internal MyTextBox SearchBox;
         internal System.Windows.Forms.Label Label3;
-        internal System.Windows.Forms.TextBox textBox4;
+        internal MyTextBox textBox4;
         internal System.Windows.Forms.Label Label2;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.DataGridView ListBox1;

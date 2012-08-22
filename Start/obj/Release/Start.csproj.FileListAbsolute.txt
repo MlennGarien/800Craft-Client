@@ -17,9 +17,9 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\OpenTK
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\ManicDigger.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\OpenTK.xml
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.csprojResolveAssemblyReference.cache
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\ManicDigger.ServerSelector.resources
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.csproj.GenerateResource.Cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.Properties.Resources.resources
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\Ionic.Zip.dll
+C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\ManicDigger.MyTextBox.resources

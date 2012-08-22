@@ -62,7 +62,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="ServerSelector.cs">
-      <SubType>Form</SubType>
+      <SubType>Component</SubType>
     </Compile>
     <Compile Include="ServerSelector.Designer.cs">
       <DependentUpon>ServerSelector.cs</DependentUpon>

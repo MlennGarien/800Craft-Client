@@ -1166,11 +1166,6 @@ namespace ManicDigger
                     }
                     return;
                 }
-                if (e.Key == OpenTK.Input.Key.F1)
-                {
-                    movespeed = basemovespeed * 1;
-                    Log("Move speed: 1x.");
-                }
                 if (e.Key == OpenTK.Input.Key.F9)
                 {
                     string defaultserverfile = "defaultserver.txt";
@@ -1207,7 +1202,7 @@ namespace ManicDigger
                     if (ENABLE_NOCLIP) { Log("Noclip enabled."); }
                     else { Log("Noclip disabled."); }
                 }
-                if (e.Key == OpenTK.Input.Key.I)
+                if (e.Key == OpenTK.Input.Key.F1)
                 {
                     drawblockinfo = !drawblockinfo;
                 }
@@ -1237,7 +1232,7 @@ namespace ManicDigger
                 {
                     using (Bitmap bmp = GrabScreenshot())
                     {
-                        string path = System.Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                        string path = "Screenshots";
                         string time = string.Format("{0:yyyy-MM-dd_HH-mm-ss}", DateTime.Now);
                         string filename = Path.Combine(path, time + ".png");
                         bmp.Save(filename);
@@ -1792,8 +1787,8 @@ namespace ManicDigger
                         overheadcameraK.Move(m, (float)e.Time);
                         if ((player.playerposition - playerdestination).Length >= 1f)
                         {
-                                movedy += 1.5f;
-                            
+                            movedy += 1.5f;
+
                             if (physics.reachedwall)
                             {
                                 wantsjump = true;

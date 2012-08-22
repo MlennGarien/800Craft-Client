@@ -249,7 +249,10 @@ namespace ManicDigger
                             byte[] chunkData = br.ReadBytes(chunkLength);
                             lock (chunkData)
                             {
-                                bw1 = new BinaryWriter(receivedMapStream);
+                                if (bw1 == null)
+                                {
+                                    bw1 = new BinaryWriter(receivedMapStream);
+                                }
                                 bw1.Write(chunkData);
                                 MapLoadingPercentComplete = br.ReadByte();
                                 InvokeMapLoadingProgress(MapLoadingPercentComplete, (int)receivedMapStream.Length);
