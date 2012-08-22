@@ -135,7 +135,10 @@ namespace ManicDigger
             return null;
         }
         static float sqrt3 = (float)Math.Sqrt(3);
-        private bool IsSmallChunkInFrustum(int x, int y, int z)
+
+        //was a bad idea top use frustumculling here, meshbatcher uses it
+
+        /*private bool IsSmallChunkInFrustum(int x, int y, int z)
         {
             return frustum.SphereInFrustum(x * chunksize + chunksize / 2,
                            z * chunksize + chunksize / 2,
@@ -148,7 +151,7 @@ namespace ManicDigger
                                     vz * bigchunksize * chunksize + chunksize * bigchunksize / 2,
                                     vy * bigchunksize * chunksize + chunksize * bigchunksize / 2,
                                     (bigchunksize * chunksize / 2) * sqrt3);
-        }
+        }*/
         private bool IsValidBigChunkPosition(int xx, int yy, int zz)
         {
             return xx >= 0 && yy >= 0 && zz >= 0

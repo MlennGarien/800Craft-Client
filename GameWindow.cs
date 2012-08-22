@@ -1192,15 +1192,11 @@ namespace ManicDigger
                 {
                     player.movedz = 0;
                     ENABLE_FREEMOVE = !ENABLE_FREEMOVE;
-                    if (ENABLE_FREEMOVE) { Log("Freemove enabled."); }
-                    else { Log("Freemove disabled."); }
                 }
                 
                 if (e.Key == OpenTK.Input.Key.F4)
                 {
                     ENABLE_NOCLIP = !ENABLE_NOCLIP;
-                    if (ENABLE_NOCLIP) { Log("Noclip enabled."); }
-                    else { Log("Noclip disabled."); }
                 }
                 if (e.Key == OpenTK.Input.Key.F1)
                 {
@@ -1234,22 +1230,21 @@ namespace ManicDigger
                     {
                         string path = "Screenshots";
                         string time = string.Format("{0:yyyy-MM-dd_HH-mm-ss}", DateTime.Now);
-                        string filename = Path.Combine(path, time + ".png");
-                        bmp.Save(filename);
+                        string filename = Path.Combine(path, time + ".jpg");
+                        bmp.Save(filename, ImageFormat.Jpeg);
                         screenshotflash = 5;
+                        Log("Screenshot saved to the Screenshots folder");
                     }
                 }
                 if (e.Key == OpenTK.Input.Key.R)
                 {
                     player.playerposition = game.PlayerPositionSpawn;
                     player.movedz = 0;
-                    Log("Respawn.");
                 }
                 if (e.Key == OpenTK.Input.Key.P)
                 {
                     game.PlayerPositionSpawn = player.playerposition;
                     player.playerposition = new Vector3((int)player.playerposition.X + 0.5f, player.playerposition.Y, (int)player.playerposition.Z + 0.5f);
-                    Log("Spawn position set.");
                 }
                 if (e.Key == OpenTK.Input.Key.F)
                 {
@@ -1264,7 +1259,6 @@ namespace ManicDigger
                     }
                     the3d.config3d.viewdistance = drawDistances[0];
                 done:
-                    Log("Fog distance: " + the3d.config3d.viewdistance);
                     OnResize(new EventArgs());
                  }
                 if (e.Key == OpenTK.Input.Key.B)
@@ -1383,11 +1377,14 @@ namespace ManicDigger
                 throw new GraphicsContextMissingException();
 
             Bitmap bmp = new Bitmap(this.ClientSize.Width, this.ClientSize.Height);
-            System.Drawing.Imaging.BitmapData data =
-                bmp.LockBits(this.ClientRectangle, System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            GL.ReadPixels(0, 0, this.ClientSize.Width, this.ClientSize.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgr, PixelType.UnsignedByte, data.Scan0);
-            bmp.UnlockBits(data);
 
+            BitmapData data = bmp.LockBits(this.ClientRectangle, 
+                System.Drawing.Imaging.ImageLockMode.WriteOnly, 
+                System.Drawing.Imaging.PixelFormat.Format24bppRgb);
+
+            GL.ReadPixels(0, 0, this.ClientSize.Width, this.ClientSize.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgr, PixelType.UnsignedByte, data.Scan0);
+            
+            bmp.UnlockBits(data);
             bmp.RotateFlip(RotateFlipType.RotateNoneFlipY);
             return bmp;
         }

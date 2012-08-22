@@ -28,6 +28,7 @@ namespace ManicDigger
     {
         public ServerSelector()
         {
+            CheckCreateDirs();
             InitializeComponent();
             if (!CheckJarExists())
             {
@@ -99,6 +100,24 @@ namespace ManicDigger
             {
                 MessageBox.Show("The minecraft.jar is required and 800Craft Client cannot run without it");
                 Environment.Exit(1);
+            }
+        }
+
+        public void CheckCreateDirs()
+        {
+            if (!Directory.Exists("data"))
+            {
+                MessageBox.Show("Folder \"Data\" does not exist, redownload 800Craft Client", "Error!");
+                Environment.Exit(1);
+                return;
+            }
+            if (!Directory.Exists("Screenshots"))
+            {
+                Directory.CreateDirectory("Screenshots");
+            }
+            if (!Directory.Exists("Logs"))
+            {
+                Directory.CreateDirectory("Logs");
             }
         }
         
