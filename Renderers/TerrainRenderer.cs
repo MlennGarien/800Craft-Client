@@ -233,7 +233,7 @@ namespace ManicDigger
             }
             this.terrainTextures1d = terrainTextures1d.ToArray();
         }
-        public int atlas1dheight = 2048;
+        public int atlas1dheight = 4096; //256x256 seems to be the limit? Check atlas code
         public int atlas2dtiles = 16; // 16x16
         public int[] terrainTextures1d { get; set; }
         public int terrainTexturesPerAtlas { get; set; }

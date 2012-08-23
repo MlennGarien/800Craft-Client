@@ -2841,7 +2841,6 @@ namespace ManicDigger
         {
             Draw2dBitmapFile(Path.Combine("gui", "mousecursor.png"), mouse_current.X, mouse_current.Y, 20, 20);
         }
-        int chatfontsize = 10;
         Size? aimsize;
         private void Draw2d()
         {
@@ -2914,7 +2913,7 @@ namespace ManicDigger
             }
             if (ENABLE_DRAWFPS)
             {
-                Draw2dText(fpstext, 20f, 20f, chatfontsize, Color.White);
+                Draw2dText(fpstext, 20f, 20f, ChatFontSize - 1, Color.White);
             }
             if (ENABLE_DRAWFPSHISTORY)
             {
@@ -2968,12 +2967,12 @@ namespace ManicDigger
             
             for (int i = 0; i < l.Count; i++)
             {
-                Draw2dText(l[i], 200 + 200 * (i / 8), 200 + 30 * i, chatfontsize, Color.White);
+                Draw2dText(l[i], 200 + 200 * (i / 8), 200 + 30 * i, ChatFontSize, Color.White);
             }
         }
         private void DrawTypingBuffer()
         {
-            Draw2dText(GuiTypingBuffer + "_", 50, Height - 100, chatfontsize, Color.White);
+            Draw2dText(GuiTypingBuffer + "_", 50, Height - 100, ChatFontSize + 1, Color.White);
         }
         private void DrawAim()
         {
@@ -3348,7 +3347,7 @@ namespace ManicDigger
         }
         public int ChatScreenExpireTimeSeconds = 20;
         public int ChatLinesMaxToDraw = 11;
-        public static int ChatFontSize = 9;
+        public static int ChatFontSize = 10;
         public static FontFamily ff;
         public static Font fn;
         public void DrawChatLines(bool all)

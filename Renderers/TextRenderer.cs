@@ -69,8 +69,8 @@ namespace ManicDigger
                     {
                         continue;
                     }
-                    g2.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                    g2.DrawString(parts[i].text, font, new SolidBrush(Color.Black), currentwidth + 2f, 2f);
+                    g2.SmoothingMode = SmoothingMode.HighQuality;
+                    g2.DrawString(parts[i].text, font, new SolidBrush(Color.Black), currentwidth + 1.3f, 1.3f);
                     g2.DrawString(parts[i].text, font, new SolidBrush(parts[i].color.ToColor()), currentwidth, 0);
 
                     currentwidth += sizei.Width;
