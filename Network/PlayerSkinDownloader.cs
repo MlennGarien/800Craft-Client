@@ -117,7 +117,7 @@ namespace ManicDigger.Network
                     }
                     try
                     {
-                        byte[] skindata = c.DownloadData("http://www.minecraft.net/skin/"+ StripColors(name)+".png");
+                        byte[] skindata = c.DownloadData("http://minecraft.net/skin/"+ StripColors(name)+".png");
                         lock (texturestoload)
                         {
                             texturestoload[name] = skindata;

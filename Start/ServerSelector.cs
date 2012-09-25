@@ -41,7 +41,7 @@ namespace ManicDigger
 
         string JarFile = 
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + 
-            "/Temp/www.minecraft.net/Minecraft/minecraft.jar";
+            "/Temp/minecraft.net/Minecraft/minecraft.jar";
         string TargetDirectory = "data/minecraft";
         string JarUrl = "https://s3.amazonaws.com/MinecraftDownload/classic/minecraft.jar";
 

@@ -48,7 +48,7 @@ namespace ManicDigger
         {
             ReportProgress(0);
             List<ServerInfo> l = new List<ServerInfo>();
-            string url = "http://www.minecraft.net/classic/list";
+            string url = "http://minecraft.net/classic/list";
             string html = LoginAndReadPage(username, password, url);
             Regex ServerListEntry = new Regex(@"<a href=""/classic/play/([0-9a-f]+)"">([^<]+)</a>\s+</td>\s+<td>(\d+)</td>\s+<td>(\d+)</td>\s+<td>(\d+\w)</td>");
             int matchNumber = 0;
@@ -67,7 +67,7 @@ namespace ManicDigger
                 {
                     continue;
                 }
-                l.Add(new ServerInfo() { Url = "http://www.minecraft.net/classic/play/" + hash, Name = name, Players = players, PlayersMax = maxPlayers });
+                l.Add(new ServerInfo() { Url = "http://minecraft.net/classic/play/" + hash, Name = name, Players = players, PlayersMax = maxPlayers });
                 matchNumber++;
             }
             ReportProgress(1);
@@ -143,9 +143,9 @@ namespace ManicDigger
         {
             //Step 1.
             //---
-            //Go to http://www.minecraft.net/login and GET, you will receive JSESSIONID cookie.
+            //Go to http://minecraft.net/login and GET, you will receive JSESSIONID cookie.
             //---
-            string loginurl = "http://www.minecraft.net/login";
+            string loginurl = "http://minecraft.net/login";
             string data11 = string.Format("username={0}&password={1}", username, password);
             string sessionidcookie;
             {
@@ -169,19 +169,19 @@ namespace ManicDigger
             ReportProgress(1.0 / 3);
             //Step 2.
             //---
-            //Go to http://www.minecraft.net/login and POST "username={0}&password={1}" using JSESSIONID cookie.
+            //Go to http://minecraft.net/login and POST "username={0}&password={1}" using JSESSIONID cookie.
             //You will receive logged in cookie ("_uid").
             //Because of multipart http page, HttpWebRequest has some trouble receiving cookies in step 2,
             //so it is easier to just use raw TcpClient for this.
             //---
             {
-                using (TcpClient step2Client = new TcpClient("www.minecraft.net", 80))
+                using (TcpClient step2Client = new TcpClient("minecraft.net", 80))
                 {
                     var stream = step2Client.GetStream();
                     StreamWriter sw = new StreamWriter(stream);
 
                     sw.WriteLine("POST /login HTTP/1.0");
-                    sw.WriteLine("Host: www.minecraft.net");
+                    sw.WriteLine("Host: minecraft.net");
                     sw.WriteLine("Content-Type: application/x-www-form-urlencoded");
                     sw.WriteLine("Set-Cookie: " + sessionidcookie);
                     sw.WriteLine("Content-Length: " + data11.Length);

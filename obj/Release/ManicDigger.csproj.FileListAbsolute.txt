@@ -12,8 +12,13 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\ManicDigger.
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\ManicDigger.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\OpenTK.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\bin\Release\OpenTK.xml
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.ConsoleForm.resources
-C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.csproj.GenerateResource.Cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.pdb
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\obj\Release\ManicDigger.csprojResolveAssemblyReference.cache
+F:\Old PC\GitHub\800Craft-Client\bin\Release\ManicDigger.dll.config
+F:\Old PC\GitHub\800Craft-Client\bin\Release\ManicDigger.dll
+F:\Old PC\GitHub\800Craft-Client\bin\Release\ManicDigger.pdb
+F:\Old PC\GitHub\800Craft-Client\bin\Release\OpenTK.xml
+F:\Old PC\GitHub\800Craft-Client\obj\Release\ResolveAssemblyReference.cache
+F:\Old PC\GitHub\800Craft-Client\obj\Release\ManicDigger.dll
+F:\Old PC\GitHub\800Craft-Client\obj\Release\ManicDigger.pdb

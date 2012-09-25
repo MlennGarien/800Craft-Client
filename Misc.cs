@@ -161,7 +161,7 @@ namespace ManicDigger
             {
                 if (gameversion == null)
                 {
-                    gameversion = ManicDigger.UpdateChecker.ClientVersion.ToString();
+                    gameversion = ManicDigger.UpdateChecker.ClientVersion.ToString() + " ("+ UpdateChecker.ReleaseType +")";
                 }
                 return gameversion;
             }

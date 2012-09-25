@@ -195,6 +195,7 @@ namespace ManicDigger
         public string ServerName { get { return serverName; } set { serverName = value; } }
         public string ServerMotd { get { return serverMotd; } set { serverMotd = value; } }
         public int LocalPlayerId = 255;
+        bool ServerIdentified = false;
         private int TryReadPacket()
         {
             BinaryReader br = new BinaryReader(new MemoryStream(received.ToArray()));
@@ -215,41 +216,45 @@ namespace ManicDigger
             {
                 case MinecraftServerPacketId.ServerIdentification:
                     {
-                        totalread += 1 + NetworkHelper.StringLength + NetworkHelper.StringLength + 1; if (received.Count < totalread) { return 0; }
-                        if (ENABLE_FORTRESS)
+                        if (!ServerIdentified)
                         {
-                            totalread += NetworkHelper.StringLength; if (received.Count < totalread) { return 0; }
-                        }
-                        ServerPlayerIdentification p = new ServerPlayerIdentification();
-                        p.ProtocolVersion = br.ReadByte();
-                        string invalidversionstr = "Invalid game version. Local: {0}, Server: {1}";
-                        if (!ENABLE_FORTRESS)
-                        {
-                            if (!(p.ProtocolVersion == 7 || p.ProtocolVersion == 6))
+                            totalread += 1 + NetworkHelper.StringLength + NetworkHelper.StringLength + 1; if (received.Count < totalread) { return 0; }
+                            if (ENABLE_FORTRESS)
                             {
-                                throw new Exception(string.Format(invalidversionstr,
-                                    "Minecraft 7", "Minecraft " + p.ProtocolVersion));
+                                totalread += NetworkHelper.StringLength; if (received.Count < totalread) { return 0; }
                             }
-                        }
-                        else
-                        {
-                            string servergameversion = NetworkHelper.ReadString64(br);
-                            if (p.ProtocolVersion != 200)
+                            ServerPlayerIdentification p = new ServerPlayerIdentification();
+                            p.ProtocolVersion = br.ReadByte();
+                            string invalidversionstr = "Invalid game version. Local: {0}, Server: {1}";
+                            if (!ENABLE_FORTRESS)
                             {
-                                servergameversion = "Minecraft " + p.ProtocolVersion;
+                                if (!(p.ProtocolVersion == 7 || p.ProtocolVersion == 8))
+                                {
+                                    throw new Exception(string.Format(invalidversionstr,
+                                        "Minecraft 7", "Minecraft " + p.ProtocolVersion));
+                                }
                             }
-                            if (servergameversion != GameVersion.Version)
+                            else
                             {
-                                throw new Exception(string.Format(invalidversionstr, GameVersion.Version, servergameversion));
+                                string servergameversion = NetworkHelper.ReadString64(br);
+                                if (p.ProtocolVersion != 200)
+                                {
+                                    servergameversion = "Minecraft " + p.ProtocolVersion;
+                                }
+                                if (servergameversion != GameVersion.Version)
+                                {
+                                    throw new Exception(string.Format(invalidversionstr, GameVersion.Version, servergameversion));
+                                }
                             }
+                            p.ServerName = NetworkHelper.ReadString64(br);
+                            p.ServerMotd = NetworkHelper.ReadString64(br);
+                            p.UserType = br.ReadByte();
+                            //connected = true;
+                            this.serverName = p.ServerName;
+                            this.ServerMotd = p.ServerMotd;
+                            ChatLog("---Connected---");
+                            ServerIdentified = true;
                         }
-                        p.ServerName = NetworkHelper.ReadString64(br);
-                        p.ServerMotd = NetworkHelper.ReadString64(br);
-                        p.UserType = br.ReadByte();
-                        //connected = true;
-                        this.serverName = p.ServerName;
-                        this.ServerMotd = p.ServerMotd;
-                        ChatLog("---Connected---");
                     }
                     break;
                 case MinecraftServerPacketId.Ping:
@@ -289,8 +294,10 @@ namespace ManicDigger
                         mapreceivedsizez = NetworkHelper.ReadInt16(br);
                         mapreceivedsizey = NetworkHelper.ReadInt16(br);
                         receivedMapStream.Seek(0, SeekOrigin.Begin);
-                        using (MemoryStream decompressed = new MemoryStream(GzipCompression.Decompress(receivedMapStream.ToArray())))
+                        if (!ENABLE_FORTRESS)
                         {
+                            using(MemoryStream decompressed = new MemoryStream(GzipCompression.Decompress(receivedMapStream.ToArray())))
+                            {
                             if (decompressed.Length != mapreceivedsizex * mapreceivedsizey * mapreceivedsizez +
                                 (decompressed.Length % 1024))
                             {
@@ -318,7 +325,12 @@ namespace ManicDigger
                             Map.Map.MapSizeZ = receivedmap.GetUpperBound(2) + 1;
                             Console.WriteLine("Game loaded successfully.");
                         }
-
+                        }
+                        else
+                        {
+                            int simulationstartframe = NetworkHelper.ReadInt32(br);
+                            gameworld.LoadState(receivedMapStream.ToArray(), simulationstartframe);
+                        }
                         if (MapLoaded != null)
                         {
                             MapLoaded.Invoke(this, new MapLoadedEventArgs() { });
@@ -495,10 +507,10 @@ namespace ManicDigger
             {
                 Directory.CreateDirectory(gamepathlogs);
             }
-            string filename = Path.Combine(gamepathlogs, MakeValidFileName(serverName) + ".txt");
+            string filename = Path.Combine(gamepathlogs, MakeValidFileName(serverName) + ".rtf");
             try
             {
-                File.AppendAllText(filename, string.Format("{0} {1}\n", DateTime.Now, p));
+                File.AppendAllText(filename, string.Format("{0} {1}\n", DateTime.Now, ManicDiggerGameWindow.StripColors(p)));
             }
             catch
             {

@@ -84,7 +84,6 @@ namespace ManicDigger
             path.AddString(s, font.FontFamily, (int)font.Style, emSize, rect, format);
             return path;
         }
-        int textalpha = 0;
         private uint NextPowerOfTwo(uint x)
         {
             x--;

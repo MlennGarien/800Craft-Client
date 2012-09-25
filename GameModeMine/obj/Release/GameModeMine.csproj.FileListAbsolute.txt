@@ -19,3 +19,9 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\GameMo
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.csprojResolveAssemblyReference.cache
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.exe
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.pdb
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\GameModeMine.exe.config
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\GameModeMine.exe
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\GameModeMine.pdb
+F:\Old PC\GitHub\800Craft-Client\GameModeMine\obj\Release\ResolveAssemblyReference.cache
+F:\Old PC\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.exe
+F:\Old PC\GitHub\800Craft-Client\GameModeMine\obj\Release\GameModeMine.pdb

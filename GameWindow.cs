@@ -395,8 +395,6 @@ namespace ManicDigger
             {
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-                //GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)TextureEnvMode.Blend);
-                //GL.TexEnv(TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvColor, new Color4(0, 0, 0, byte.MaxValue));
             }
 
             return id;
@@ -541,6 +539,7 @@ namespace ManicDigger
         public float interp;
         public int frame;
         public object data;
+        public float slowdownTimer;
     }
     public class AngleInterpolation
     {
@@ -661,6 +660,7 @@ namespace ManicDigger
         public ManicDiggerGameWindow()
             : base(1000, 550, GraphicsMode.Default, "",
                 ENABLE_FULLSCREEN ? GameWindowFlags.Fullscreen : GameWindowFlags.Default) { VSync = VSyncMode.Adaptive; }
+        //glControl1.
         The3d the3d = new The3d();
         public int LoadTexture(string filename)
         {
@@ -741,6 +741,8 @@ namespace ManicDigger
             }
             Mouse.Move += new EventHandler<OpenTK.Input.MouseMoveEventArgs>(Mouse_Move);
             Mouse.WheelChanged += new EventHandler<OpenTK.Input.MouseWheelEventArgs>(Mouse_WheelChanged);
+
+
             if (config3d.ENABLE_BACKFACECULLING)
             {
                 GL.DepthMask(true);
@@ -843,7 +845,7 @@ namespace ManicDigger
                         string server = arguments;
                         if (server.Length == 32)
                         {
-                            server = "http://www.minecraft.net/play.jsp?server=" + server;
+                            server = "http://minecraft.net/play.jsp?server=" + server;
                         }
                         LoadPassword();
                         ConnectToInternetGame(username, pass, server);
@@ -1079,6 +1081,22 @@ namespace ManicDigger
                 if(ChatPageScroll > 0)
                 ChatPageScroll--;
             }
+            if (Keyboard[OpenTK.Input.Key.KeypadMinus])
+            {
+                if (ChatFontSize > 6)
+                {
+                    ChatFontSize--;
+                    fn = new Font(ff, ChatFontSize, FontStyle.Bold);
+                }
+            }
+            if (Keyboard[OpenTK.Input.Key.KeypadPlus])
+            {
+                if (ChatFontSize < 25)
+                {
+                    ChatFontSize++;
+                    fn = new Font(ff, ChatFontSize, FontStyle.Bold);
+                }
+            }
             if (guistate == GuiState.Normal)
             {
                 
@@ -1184,7 +1202,7 @@ namespace ManicDigger
                     else
                     {
                         Log(string.Format("File {0} not found.", defaultserverfile));
-                        File.Create("defaultserver.text");
+                        File.Create("defaultserver.txt");
                         Log(string.Format("Created file {0}, you can add your favorite server url in it!", defaultserverfile));
                     }
                 }
@@ -2042,7 +2060,7 @@ namespace ManicDigger
             {
                 player.playerorientation.Y += (float)mouse_delta.X * rotationspeed * (float)e.Time;
                 player.playerorientation.X += (float)mouse_delta.Y * rotationspeed * (float)e.Time;
-                player.playerorientation.X = MyMath.Clamp(player.playerorientation.X, (float)Math.PI / 2 + 0.15f, (float)(Math.PI / 2 + Math.PI - 0.15f));
+                player.playerorientation.X = MyMath.Clamp(player.playerorientation.X, (float)Math.PI / 2 + 0.01f, (float)(Math.PI / 2 + Math.PI - 0.01f));
             }
             UpdatePicking();
         }
@@ -2429,23 +2447,23 @@ namespace ManicDigger
             if (drawgame)
             {
                 DrawSkySphere();
-                terrain.Draw();
-                particleEffectBlockBreak.DrawImmediateParticleEffects(e.Time);
-                if (ENABLE_DRAW2D)
-                {
-                    DrawLinesAroundSelectedCube(pickcubepos);
-                }
-
                 DrawCharacters((float)e.Time);
                 DrawPlayers((float)e.Time);
                 foreach (IModelToDraw m in game.Models)
                 {
                     m.Draw((float)e.Time);
                 }
+                if (ENABLE_DRAW2D)
+                {
+                    DrawLinesAroundSelectedCube(pickcubepos);
+                }
+                particleEffectBlockBreak.DrawImmediateParticleEffects(e.Time);
+                terrain.Draw();
                 if ((!ENABLE_TPP_VIEW) && ENABLE_DRAW2D)
                 {
                     weapon.DrawWeapon((float)e.Time);
                 }
+                
             }
             SetAmbientLight(Color.White);
             Draw2d();
@@ -2913,7 +2931,8 @@ namespace ManicDigger
             }
             if (ENABLE_DRAWFPS)
             {
-                Draw2dText(fpstext, 20f, 20f, ChatFontSize - 1, Color.White);
+                int Size = 10;
+                Draw2dText(fpstext, 20f, 20f, Size, Color.White);
             }
             if (ENABLE_DRAWFPSHISTORY)
             {
@@ -3347,7 +3366,7 @@ namespace ManicDigger
         }
         public int ChatScreenExpireTimeSeconds = 20;
         public int ChatLinesMaxToDraw = 11;
-        public static int ChatFontSize = 10;
+        public static int ChatFontSize = 11;
         public static FontFamily ff;
         public static Font fn;
         public void DrawChatLines(bool all)

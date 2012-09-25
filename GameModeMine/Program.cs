@@ -146,8 +146,8 @@ namespace ManicDigger
             playerskindownloader.the3d = the3d;
             playerskindownloader.skinserver = "http://minecraft.net/skin/";
             w.playerskindownloader = playerskindownloader;
-            physics.d_Map = clientgame;
-            physics.d_Data = gamedata;
+            physics.map = clientgame;
+            physics.data = gamedata;
             mapgenerator.data = gamedata;
             audio.getfile = getfile;
             audio.gameexit = w;

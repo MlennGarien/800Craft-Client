@@ -23,3 +23,18 @@ C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\Start.Properties.Resources.resources
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\bin\Release\Ionic.Zip.dll
 C:\Users\Administrator\Documents\GitHub\800Craft-Client\Start\obj\Release\ManicDigger.MyTextBox.resources
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\Start.exe.config
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\Start.exe
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\Start.pdb
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\Ionic.Zip.dll
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\ManicDigger.dll
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\OpenTK.dll
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\ManicDigger.pdb
+F:\Old PC\GitHub\800Craft-Client\Start\bin\Release\OpenTK.xml
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\ResolveAssemblyReference.cache
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\Start.Properties.Resources.resources
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\ManicDigger.MyTextBox.resources
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\GenerateResource-ResGen.read.1.tlog
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\GenerateResource-ResGen.write.1.tlog
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\Start.exe
+F:\Old PC\GitHub\800Craft-Client\Start\obj\Release\Start.pdb

@@ -51,6 +51,7 @@ namespace ManicDigger
         //public IKeyboard keyboard { get; set; }
         [Inject]
         public ILocalPlayerPosition playerpos { get; set; }
+        float slowdownTimer;
         public void SetAttack(bool isattack, bool build)
         {
             this.build = build;
@@ -138,11 +139,16 @@ namespace ManicDigger
             if (move)
             {
                 t += dt;
+                slowdownTimer = float.MaxValue;
             }
             else
             {
-                float f = CharacterRendererMonsterCode.Normalize(t, (float)animperiod / 2);
-                if (Math.Abs(f) < 0.02f)
+                if (slowdownTimer == float.MaxValue)
+                {
+                   slowdownTimer = (float)(animperiod / 2 - (t % (animperiod / 2)));
+                }
+                slowdownTimer -= dt;
+                if (slowdownTimer < 0)
                 {
                     t = 0;
                 }
